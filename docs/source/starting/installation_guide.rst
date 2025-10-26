@@ -87,7 +87,7 @@ Use this method if you want the latest beta updates.
 
       .. note::
             
-        `mujoco-warp` must be installed from Git since it's not available on PyPI.
+        ``mujoco-warp`` must be installed from Git since it's not available on PyPI.
 
 
 Method 2: From PyPI (Beta Snapshot)
@@ -95,7 +95,7 @@ Method 2: From PyPI (Beta Snapshot)
 
 You can install the latest beta snapshot from PyPI, but note:
 - It is **not stable**
-- You still need to install `mujoco-warp` from Git
+- You still need to install ``mujoco-warp`` from Git
   
 .. code-block:: bash
 
@@ -148,9 +148,9 @@ Install mjlab and dependencies via pip:
 
       .. note::
             
-        You must install `mujoco-warp` from Git before running `pip install -e .` 
+        You must install ``mujoco-warp`` from Git before running ``pip install -e .`` 
         since it's not available on PyPI and pip cannot resolve the Git dependency 
-        specified in `pyproject.toml` (which uses uv-specific syntax).
+        specified in ``pyproject.toml`` (which uses uv-specific syntax).
 
 
    .. tab-item:: From PyPI

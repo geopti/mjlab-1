@@ -53,19 +53,28 @@ Table of Contents
    :maxdepth: 1
    :caption: Getting Started
 
-   source/installation_guide
-   source/migration_guide
-   source/create_new_task
+   source/starting/installation_guide
+   source/starting/migration_guide
+   source/starting/create_new_task
 
 .. toctree::
    :maxdepth: 1
    :caption: Overview
 
-   source/motivation
-   source/faq
+   source/overview/motivation
+   source/overview/faq
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Core Concepts
+
+   source/core/domain_randomization
+   source/core/nan_guard
+   source/core/obs_history_delay
+   source/core/spec_config
 
 .. toctree::
    :maxdepth: 1
    :caption: Source API
 
-   source/api
+   source/api/index

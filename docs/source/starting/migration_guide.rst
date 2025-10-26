@@ -3,8 +3,15 @@
 Migration from Isaac Lab
 ========================
 
-
-**🚧 Work in Progress:** This guide is actively being improved as more users onboard and find issues. If something isn't covered here, please `open an issue <https://github.com/mujocolab/mjlab/issues>`_ or `start a discussion <https://github.com/mujocolab/mjlab/discussions>`_. Your questions help us improve the docs!
+.. attention::
+    
+    **🚧 Work in Progress:** This guide is actively being 
+    improved as more users onboard and find issues. If 
+    something isn't covered here, please 
+    open an issue (https://github.com/mujocolab/mjlab/issues) or 
+    start a discussion 
+    (https://github.com/mujocolab/mjlab/discussions). Your 
+    questions help us improve the docs!
 
 
 TL;DR
@@ -27,12 +34,15 @@ Import Paths
 |                                                              |                                                                   |
 +--------------------------------------------------------------+-------------------------------------------------------------------+
 
-**Note:** We use consistent `CamelCase` naming conventions (e.g., `RlEnv` instead of `RLEnv`).
+.. note::
+    
+    We use consistent ``CamelCase`` naming conventions 
+    (e.g., ``RlEnv`` instead of ``RLEnv``).
 
 Configuration Classes
 ^^^^^^^^^^^^^^^^^^^^^
 
-Isaac Lab uses `@configclass`, mjlab uses Python's standard `@dataclass` with a `term()` helper.
+Isaac Lab uses ``@configclass``, mjlab uses Python's standard ``@dataclass`` with a ``term()`` helper.
 
 +---------------------------------------------------------------+-------------------------------------------------------------------+
 |                                                               |                                                                   |
@@ -112,7 +122,7 @@ Scene setup is more streamlined in mjlab—no Omniverse/USD scene graphs. Instea
 Key changes:
 ^^^^^^^^^^^^
 
-- No USD scene graph or `prim_path` management
+- No USD scene graph or ``prim_path`` management
 - Materials, lights, and textures configured via MuJoCo's MjSpec. See our `spec_config.py <https://github.com/mujocolab/mjlab/blob/main/src/mjlab/utils/spec_config.py>`_ for dataclass-based modifiers that handle MjSpec changes for you.
 
 Complete Example Comparison
@@ -131,7 +141,7 @@ Compare these to see how similar the APIs are in practice.
 Tips for Migration
 ------------------
 
-1. **Check the examples** - Look at our reference tasks in `src/mjlab/tasks/`
+1. **Check the examples** - Look at our reference tasks in ``src/mjlab/tasks/``
 2. **Ask questions** - `Open a discussion <https://github.com/mujocolab/mjlab/discussions>`_ if you get stuck
 3. **MuJoCo differences** - Some Isaac Sim features (fancy rendering, USD workflows) don't have direct equivalents
 
