@@ -92,6 +92,7 @@ class Entity:
 
   Entity Type Matrix
   ==================
+
   MuJoCo entities can be categorized along two dimensions:
 
   1. Base Type:
@@ -103,13 +104,16 @@ class Entity:
     - Articulated: Has joints in kinematic tree (may or may not be actuated)
 
   Supported Combinations:
-  ----------------------
+  -----------------------
+
+  +---------------------------+----------------------------+---------------+----------------+-------------+
   | Type                      | Example                    | is_fixed_base | is_articulated | is_actuated |
-  |---------------------------|----------------------------|---------------|----------------|-------------|
+  +---------------------------+----------------------------+---------------+----------------+-------------+
   | Fixed Non-articulated     | Table, wall, ground plane  | True          | False          | False       |
   | Fixed Articulated         | Robot arm, door on hinges  | True          | True           | True/False  |
   | Floating Non-articulated  | Box, ball, mug             | False         | False          | False       |
   | Floating Articulated      | Humanoid, quadruped        | False         | True           | True/False  |
+  +---------------------------+----------------------------+---------------+----------------+-------------+
   """
 
   def __init__(self, cfg: EntityCfg) -> None:

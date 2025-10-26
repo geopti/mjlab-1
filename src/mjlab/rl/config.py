@@ -1,5 +1,7 @@
 """RSL-RL configuration."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from typing import Literal, Tuple
 
@@ -89,11 +91,11 @@ class RslRlBaseRunnerCfg:
   resume: bool = False
   """Whether to resume the experiment. Default is False."""
   load_run: str = ".*"
-  """The run directory to load. Default is ".*" which means all runs. If regex
+  """The run directory to load. Default is ``".*"`` which means all runs. If regex
   expression, the latest (alphabetical order) matching run will be loaded.
   """
-  load_checkpoint: str = "model_.*.pt"
-  """The checkpoint file to load. Default is "model_.*.pt" (all). If regex expression,
+  load_checkpoint: str = "model.*.pt"
+  """The checkpoint file to load. Default is ``"model.*.pt"`` (all). If regex expression,
   the latest (alphabetical order) matching file will be loaded.
   """
   clip_actions: float | None = None

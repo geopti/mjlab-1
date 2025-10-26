@@ -1,4 +1,4 @@
-![Project banner](docs/static/mjlab-banner.jpg)
+![Project banner](docs/source/_static/mjlab-banner.jpg)
 
 # mjlab
 
@@ -144,6 +144,12 @@ Format code:
 ```bash
 uvx pre-commit install
 make format
+```
+
+Compile documentation locally:
+
+```bash
+make docs
 ```
 
 ---
