@@ -40,6 +40,73 @@ What GPU do you recommend?
 - RTX 40-series GPUs (or newer)
 - L40s, H100
 
+
+Training & Debugging
+--------------------
+
+My training crashes with NaN errors
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The typical error when using ``rsl_rl`` is:
+
+.. code-block:: bash
+
+    RuntimeError: normal expects all elements of std >= 0.0
+
+
+This occurs when NaN/Inf values in the physics state propagate to the policy
+network, causing its output standard deviation to become negative or
+NaN.
+
+There are many reasons NaNs can occur, including potential bugs in MuJoCo Warp
+(which is still in beta). mjlab provides two complementary approaches to help you
+deal with this:
+
+**For training stability**: Add ``nan_detection`` termination to reset
+environments with NaN:
+
+.. code-block:: python
+
+    from mjlab.envs.mdp.terminations import nan_detection
+    from mjlab.managers.manager_term_config import TerminationTermCfg
+
+    @dataclass
+    class TerminationCfg:
+    # Your other terminations...
+    nan_term: TerminationTermCfg = field(
+        default_factory=lambda: TerminationTermCfg(
+        func=nan_detection,
+        time_out=False
+        )
+    )
+
+
+This marks NaN environments as terminated, allowing them to reset while training
+continues. Terminations are logged as ``Episode_Termination/nan_term`` in your
+metrics.
+
+.. attention::
+
+    This is a band-aid solution. If NaNs correlate with your
+    task objective (e.g., your task is to grasp objects but NaNs occur during
+    grasping), the policy will never learn to complete the task. Always
+    investigate the root cause using ``nan_guard``.
+
+**For debugging**: Enable ``nan_guard`` to capture states when NaN occurs:
+
+.. code-block:: bash
+
+    uv run train.py --enable-nan-guard True
+
+
+See [NaN Guard documentation](api/nan_guard.md) for debugging details. The
+``nan_guard`` tool helps you understand what's causing NaNs in your simulation. If
+you discover something that looks like a framework bug, the captured states make
+it easy to create a minimal reproducible example (MRE) and report it to the
+`MuJoCo Warp team <https://github.com/google-deepmind/mujoco_warp/issues>`_.
+Reporting helps improve the framework for everyone!
+
+
 Rendering & Visualization
 -------------------------
 
@@ -134,4 +201,4 @@ If something isn't working or if we've missed something, please file a bug repor
 .. attention::
     
     **Reminder**: mjlab is in **beta**. Breaking changes and missing features are
-    expected — feedback and contributions are welcome!
+    expected; feedback and contributions are welcome!
