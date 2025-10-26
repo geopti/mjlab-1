@@ -43,4 +43,4 @@ build:
 
 .PHONY: docs
 docs:
-	@sphinx-build "docs" "docs/_build/current"
+	@sphinx-build "docs_web" "docs_web/_build/current"

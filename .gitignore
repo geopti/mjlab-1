@@ -16,5 +16,5 @@ artifacts/
 render_robots.py
 
 # Doc Outputs
-**/docs/_build/*
+**/_build/*
 **/generated/*
