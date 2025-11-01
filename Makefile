@@ -44,3 +44,7 @@ build:
 .PHONY: docs
 docs:
 	uv run --no-default-groups --group docs sphinx-build docs_web docs_web/_build
+
+.PHONY: docker-build
+docker-build:
+	docker build -t mjlab:latest .

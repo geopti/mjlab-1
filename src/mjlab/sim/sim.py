@@ -87,7 +87,15 @@ class SimulationCfg:
   """Configuration for the simulation."""
 
   nconmax: int | None = None
+  """Number of contacts to allocate per world.
+  
+  Contacts exist in large heterogenous arrays: one world may have more than nconmax
+  contacts. If None, a heuristic value is used."""
   njmax: int | None = None
+  """Number of constraints to allocate per world.
+  
+  Constraint arrays are batched by world: no world may have more than njmax
+  constraints. If None, a heuristic value is used."""
   ls_parallel: bool = True  # Boosts perf quite noticeably.
   contact_sensor_maxmatch: int = 64
   mujoco: MujocoCfg = field(default_factory=MujocoCfg)
@@ -178,10 +186,7 @@ class Simulation:
       raise ValueError(f"Fields not found in model: {invalid_fields}")
 
     expand_model_fields(self._wp_model, self.num_envs, fields)
-
-  def reset(self) -> None:
-    # TODO(kevin): Should we be doing anything here?
-    pass
+    self._model_bridge.clear_cache()
 
   def forward(self) -> None:
     with wp.ScopedDevice(self.wp_device):
@@ -197,6 +202,3 @@ class Simulation:
           wp.capture_launch(self.step_graph)
         else:
           mjwarp.step(self.wp_model, self.wp_data)
-
-  def close(self) -> None:
-    pass
