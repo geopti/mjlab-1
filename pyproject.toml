@@ -78,6 +78,7 @@ required-environments = [
   "sys_platform == 'darwin' and platform_machine == 'arm64'",
   "sys_platform == 'linux' and platform_machine == 'x86_64'",
 ]
+config-settings = { editable_mode = "compat" }
 
 [[tool.uv.index]]
 url = "https://pypi.org/simple"
@@ -107,6 +108,7 @@ mujoco-warp = { git = "https://github.com/google-deepmind/mujoco_warp", rev = "9
 warp-lang = { index = "nvidia", marker = "sys_platform != 'darwin'" }
 mujoco = { index = "mujoco" }
 torch = { index = "pytorch-cu128", extra = "cu128", marker = "sys_platform != 'darwin'" }
+mujoco-warp = { path = "../mujoco_warp", editable = true }
 
 [tool.ruff]
 src = ["src"]  # Helpful for recognizing first-party imports.
