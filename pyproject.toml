@@ -79,6 +79,13 @@ docs = [
     "sphinx-book-theme>=1.1.4",
     "sphinx-copybutton>=0.5.2",
     "sphinx-design>=0.6.1",
+    "autodocsumm",
+    "sphinxemoji",
+    "sphinxcontrib.bibtex",
+    "sphinx-icon",
+    "sphinx_design",
+    "sphinx-tabs",
+    "sphinx_multiversion",
 ]
 
 [tool.uv]
