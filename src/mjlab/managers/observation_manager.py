@@ -11,12 +11,11 @@ from prettytable import PrettyTable
 from mjlab.managers.manager_base import ManagerBase
 from mjlab.managers.manager_term_config import ObservationGroupCfg, ObservationTermCfg
 from mjlab.utils.buffers import CircularBuffer, DelayBuffer
-from mjlab.utils.dataclasses import get_terms
 from mjlab.utils.noise import noise_cfg, noise_model
 
 
 class ObservationManager(ManagerBase):
-  def __init__(self, cfg: object, env):
+  def __init__(self, cfg: dict[str, ObservationGroupCfg], env):
     self.cfg = cfg
     super().__init__(env=env)
 
@@ -24,25 +23,20 @@ class ObservationManager(ManagerBase):
 
     for group_name, group_term_dims in self._group_obs_term_dim.items():
       if self._group_obs_concatenate[group_name]:
-        try:
-          term_dims = torch.stack(
-            [torch.tensor(dims, device="cpu") for dims in group_term_dims], dim=0
-          )
-          if len(term_dims.shape) > 1:
-            if self._group_obs_concatenate_dim[group_name] >= 0:
-              dim = self._group_obs_concatenate_dim[group_name] - 1
-            else:
-              dim = self._group_obs_concatenate_dim[group_name]
-            dim_sum = torch.sum(term_dims[:, dim], dim=0)
-            term_dims[0, dim] = dim_sum
-            term_dims = term_dims[0]
+        term_dims = torch.stack(
+          [torch.tensor(dims, device="cpu") for dims in group_term_dims], dim=0
+        )
+        if len(term_dims.shape) > 1:
+          if self._group_obs_concatenate_dim[group_name] >= 0:
+            dim = self._group_obs_concatenate_dim[group_name] - 1
           else:
-            term_dims = torch.sum(term_dims, dim=0)
-          self._group_obs_dim[group_name] = tuple(term_dims.tolist())
-        except RuntimeError:
-          raise RuntimeError(
-            f"Unable to concatenate observation terms in group {group_name}."
-          ) from None
+            dim = self._group_obs_concatenate_dim[group_name]
+          dim_sum = torch.sum(term_dims[:, dim], dim=0)
+          term_dims[0, dim] = dim_sum
+          term_dims = term_dims[0]
+        else:
+          term_dims = torch.sum(term_dims, dim=0)
+        self._group_obs_dim[group_name] = tuple(term_dims.tolist())
       else:
         self._group_obs_dim[group_name] = group_term_dims
 
@@ -208,8 +202,7 @@ class ObservationManager(ManagerBase):
     self._group_obs_term_delay_buffer: dict[str, dict[str, DelayBuffer]] = dict()
     self._group_obs_term_history_buffer: dict[str, dict[str, CircularBuffer]] = dict()
 
-    group_cfg_items = get_terms(self.cfg, ObservationGroupCfg).items()
-    for group_name, group_cfg in group_cfg_items:
+    for group_name, group_cfg in self.cfg.items():
       group_cfg: ObservationGroupCfg | None
       if group_cfg is None:
         print(f"group: {group_name} set to None, skipping...")
@@ -229,8 +222,7 @@ class ObservationManager(ManagerBase):
         else group_cfg.concatenate_dim
       )
 
-      group_cfg_items = get_terms(group_cfg, ObservationTermCfg).items()
-      for term_name, term_cfg in group_cfg_items:
+      for term_name, term_cfg in group_cfg.terms.items():
         term_cfg: ObservationTermCfg | None
         if term_cfg is None:
           print(f"term: {term_name} set to None, skipping...")

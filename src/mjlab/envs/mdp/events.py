@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Dict, Literal, Tuple, Union
 
 import torch
 
 from mjlab.entity import Entity, EntityIndexing
 from mjlab.managers.scene_entity_config import SceneEntityCfg
-from mjlab.third_party.isaaclab.isaaclab.utils.math import (
-  quat_apply_inverse,
+from mjlab.utils.lab_api.math import (
   quat_from_euler_xyz,
   quat_mul,
   sample_gaussian,
@@ -19,12 +18,14 @@ from mjlab.third_party.isaaclab.isaaclab.utils.math import (
 )
 
 if TYPE_CHECKING:
-  from mjlab.envs.manager_based_env import ManagerBasedEnv
+  from mjlab.envs import ManagerBasedRlEnv
 
 _DEFAULT_ASSET_CFG = SceneEntityCfg("robot")
 
 
-def reset_scene_to_default(env: ManagerBasedEnv, env_ids: torch.Tensor | None) -> None:
+def reset_scene_to_default(
+  env: ManagerBasedRlEnv, env_ids: torch.Tensor | None
+) -> None:
   if env_ids is None:
     env_ids = torch.arange(env.num_envs, device=env.device, dtype=torch.int)
 
@@ -44,7 +45,7 @@ def reset_scene_to_default(env: ManagerBasedEnv, env_ids: torch.Tensor | None) -
 
 
 def reset_root_state_uniform(
-  env: ManagerBasedEnv,
+  env: ManagerBasedRlEnv,
   env_ids: torch.Tensor | None,
   pose_range: dict[str, tuple[float, float]],
   velocity_range: dict[str, tuple[float, float]] | None = None,
@@ -130,12 +131,11 @@ def reset_root_state_uniform(
     torch.cat([positions, orientations], dim=-1), env_ids=env_ids
   )
 
-  velocities[:, 3:] = quat_apply_inverse(orientations, velocities[:, 3:])
   asset.write_root_link_velocity_to_sim(velocities, env_ids=env_ids)
 
 
 def reset_joints_by_offset(
-  env: ManagerBasedEnv,
+  env: ManagerBasedRlEnv,
   env_ids: torch.Tensor | None,
   position_range: tuple[float, float],
   velocity_range: tuple[float, float],
@@ -173,26 +173,24 @@ def reset_joints_by_offset(
 
 
 def push_by_setting_velocity(
-  env: ManagerBasedEnv,
+  env: ManagerBasedRlEnv,
   env_ids: torch.Tensor,
   velocity_range: dict[str, tuple[float, float]],
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> None:
   asset: Entity = env.scene[asset_cfg.name]
   vel_w = asset.data.root_link_vel_w[env_ids]
-  quat_w = asset.data.root_link_quat_w[env_ids]
   range_list = [
     velocity_range.get(key, (0.0, 0.0))
     for key in ["x", "y", "z", "roll", "pitch", "yaw"]
   ]
   ranges = torch.tensor(range_list, device=env.device)
   vel_w += sample_uniform(ranges[:, 0], ranges[:, 1], vel_w.shape, device=env.device)
-  vel_w[:, 3:] = quat_apply_inverse(quat_w, vel_w[:, 3:])
   asset.write_root_link_velocity_to_sim(vel_w, env_ids=env_ids)
 
 
 def apply_external_force_torque(
-  env: ManagerBasedEnv,
+  env: ManagerBasedRlEnv,
   env_ids: torch.Tensor,
   force_range: tuple[float, float],
   torque_range: tuple[float, float],
@@ -225,8 +223,8 @@ class FieldSpec:
 
   entity_type: Literal["dof", "joint", "body", "geom", "site", "actuator"]
   use_address: bool = False  # True for fields that need address (q_adr, v_adr)
-  default_axes: Optional[List[int]] = None
-  valid_axes: Optional[List[int]] = None
+  default_axes: list[int] | None = None
+  valid_axes: list[int] | None = None
 
 
 FIELD_SPECS = {
@@ -258,14 +256,14 @@ FIELD_SPECS = {
 
 
 def randomize_field(
-  env: "ManagerBasedEnv",
+  env: "ManagerBasedRlEnv",
   env_ids: torch.Tensor | None,
   field: str,
   ranges: Union[Tuple[float, float], Dict[int, Tuple[float, float]]],
   distribution: Literal["uniform", "log_uniform", "gaussian"] = "uniform",
   operation: Literal["add", "scale", "abs"] = "abs",
   asset_cfg=None,
-  axes: Optional[List[int]] = None,
+  axes: list[int] | None = None,
 ):
   """Unified model randomization function.
 
@@ -339,9 +337,9 @@ def _get_entity_indices(
 def _determine_target_axes(
   model_field,
   spec: FieldSpec,
-  axes: Optional[List[int]],
+  axes: list[int] | None,
   ranges: Union[Tuple[float, float], Dict[int, Tuple[float, float]]],
-) -> List[int]:
+) -> list[int]:
   """Determine which axes to randomize."""
   field_ndim = len(model_field.shape) - 1  # Subtract env dimension
 
@@ -374,7 +372,7 @@ def _determine_target_axes(
 
 def _prepare_axis_ranges(
   ranges: Union[Tuple[float, float], Dict[int, Tuple[float, float]]],
-  target_axes: List[int],
+  target_axes: list[int],
   field: str,
 ) -> Dict[int, Tuple[float, float]]:
   """Convert ranges to a consistent dictionary format."""
@@ -398,7 +396,7 @@ def _generate_random_values(
   distribution: str,
   axis_ranges: Dict[int, Tuple[float, float]],
   indexed_data: torch.Tensor,
-  target_axes: List[int],
+  target_axes: list[int],
   device,
 ) -> torch.Tensor:
   """Generate random values for the specified axes."""
@@ -461,3 +459,170 @@ def _sample_distribution(
     return sample_gaussian(lower, upper, shape, device=device)
   else:
     raise ValueError(f"Unknown distribution: {distribution}")
+
+
+def randomize_pd_gains(
+  env: ManagerBasedRlEnv,
+  env_ids: torch.Tensor | None,
+  kp_range: Tuple[float, float],
+  kd_range: Tuple[float, float],
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+  distribution: Literal["uniform", "log_uniform"] = "uniform",
+  operation: Literal["scale", "abs"] = "scale",
+) -> None:
+  """Randomize PD stiffness and damping gains.
+
+  Args:
+    env: The environment.
+    env_ids: Environment IDs to randomize. If None, randomizes all environments.
+    kp_range: (min, max) for proportional gain randomization.
+    kd_range: (min, max) for derivative gain randomization.
+    asset_cfg: Asset configuration specifying which entity and actuators.
+    distribution: Distribution type ("uniform" or "log_uniform").
+    operation: "scale" multiplies existing gains, "abs" sets absolute values.
+  """
+  from mjlab.actuator import (
+    BuiltinPositionActuator,
+    IdealPdActuator,
+    XmlPositionActuator,
+  )
+
+  asset: Entity = env.scene[asset_cfg.name]
+
+  if env_ids is None:
+    env_ids = torch.arange(env.num_envs, device=env.device, dtype=torch.int)
+  else:
+    env_ids = env_ids.to(env.device, dtype=torch.int)
+
+  if isinstance(asset_cfg.actuator_ids, list):
+    actuators = [asset.actuators[i] for i in asset_cfg.actuator_ids]
+  else:
+    actuators = asset.actuators[asset_cfg.actuator_ids]
+
+  for actuator in actuators:
+    ctrl_ids = actuator.ctrl_ids
+
+    kp_samples = _sample_distribution(
+      distribution,
+      torch.tensor(kp_range[0], device=env.device),
+      torch.tensor(kp_range[1], device=env.device),
+      (len(env_ids), len(ctrl_ids)),
+      env.device,
+    )
+    kd_samples = _sample_distribution(
+      distribution,
+      torch.tensor(kd_range[0], device=env.device),
+      torch.tensor(kd_range[1], device=env.device),
+      (len(env_ids), len(ctrl_ids)),
+      env.device,
+    )
+
+    if isinstance(actuator, (BuiltinPositionActuator, XmlPositionActuator)):
+      if operation == "scale":
+        env.sim.model.actuator_gainprm[env_ids[:, None], ctrl_ids, 0] *= kp_samples
+        env.sim.model.actuator_biasprm[env_ids[:, None], ctrl_ids, 1] *= kp_samples
+        env.sim.model.actuator_biasprm[env_ids[:, None], ctrl_ids, 2] *= kd_samples
+      elif operation == "abs":
+        env.sim.model.actuator_gainprm[env_ids[:, None], ctrl_ids, 0] = kp_samples
+        env.sim.model.actuator_biasprm[env_ids[:, None], ctrl_ids, 1] = -kp_samples
+        env.sim.model.actuator_biasprm[env_ids[:, None], ctrl_ids, 2] = -kd_samples
+
+    elif isinstance(actuator, IdealPdActuator):
+      assert actuator.stiffness is not None
+      assert actuator.damping is not None
+      if operation == "scale":
+        current_kp = actuator.stiffness[env_ids].clone()
+        current_kd = actuator.damping[env_ids].clone()
+        actuator.set_gains(
+          env_ids, kp=current_kp * kp_samples, kd=current_kd * kd_samples
+        )
+      elif operation == "abs":
+        actuator.set_gains(env_ids, kp=kp_samples, kd=kd_samples)
+
+    else:
+      raise TypeError(
+        f"randomize_pd_gains only supports BuiltinPositionActuator, XmlPositionActuator, "
+        f"and IdealPdActuator, got {type(actuator).__name__}"
+      )
+
+
+def randomize_effort_limits(
+  env: ManagerBasedRlEnv,
+  env_ids: torch.Tensor | None,
+  effort_limit_range: Tuple[float, float],
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+  distribution: Literal["uniform", "log_uniform"] = "uniform",
+  operation: Literal["scale", "abs"] = "scale",
+) -> None:
+  """Randomize actuator effort limits.
+
+  Args:
+    env: The environment.
+    env_ids: Environment IDs to randomize. If None, randomizes all environments.
+    effort_limit_range: (min, max) for effort limit randomization.
+    asset_cfg: Asset configuration specifying which entity and actuators.
+    distribution: Distribution type ("uniform" or "log_uniform").
+    operation: "scale" multiplies existing limits, "abs" sets absolute values.
+  """
+  from mjlab.actuator import (
+    BuiltinPositionActuator,
+    IdealPdActuator,
+    XmlPositionActuator,
+  )
+
+  asset: Entity = env.scene[asset_cfg.name]
+
+  if env_ids is None:
+    env_ids = torch.arange(env.num_envs, device=env.device, dtype=torch.int)
+  else:
+    env_ids = env_ids.to(env.device, dtype=torch.int)
+
+  if isinstance(asset_cfg.actuator_ids, list):
+    actuators = [asset.actuators[i] for i in asset_cfg.actuator_ids]
+  else:
+    actuators = asset.actuators[asset_cfg.actuator_ids]
+
+  if not isinstance(actuators, list):
+    actuators = [actuators]
+
+  for actuator in actuators:
+    ctrl_ids = actuator.ctrl_ids
+    num_actuators = len(ctrl_ids)
+
+    effort_samples = _sample_distribution(
+      distribution,
+      torch.tensor(effort_limit_range[0], device=env.device),
+      torch.tensor(effort_limit_range[1], device=env.device),
+      (len(env_ids), num_actuators),
+      env.device,
+    )
+
+    if isinstance(actuator, (BuiltinPositionActuator, XmlPositionActuator)):
+      if operation == "scale":
+        env.sim.model.actuator_forcerange[env_ids[:, None], ctrl_ids, 0] *= (
+          effort_samples
+        )
+        env.sim.model.actuator_forcerange[env_ids[:, None], ctrl_ids, 1] *= (
+          effort_samples
+        )
+      elif operation == "abs":
+        env.sim.model.actuator_forcerange[
+          env_ids[:, None], ctrl_ids, 0
+        ] = -effort_samples
+        env.sim.model.actuator_forcerange[env_ids[:, None], ctrl_ids, 1] = (
+          effort_samples
+        )
+
+    elif isinstance(actuator, IdealPdActuator):
+      assert actuator.force_limit is not None
+      if operation == "scale":
+        current_limit = actuator.force_limit[env_ids].clone()
+        actuator.set_effort_limit(env_ids, effort_limit=current_limit * effort_samples)
+      elif operation == "abs":
+        actuator.set_effort_limit(env_ids, effort_limit=effort_samples)
+
+    else:
+      raise TypeError(
+        f"randomize_effort_limits only supports BuiltinPositionActuator, XmlPositionActuator, "
+        f"and IdealPdActuator, got {type(actuator).__name__}"
+      )

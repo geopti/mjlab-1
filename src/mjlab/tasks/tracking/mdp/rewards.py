@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, cast
 
 import torch
 
 from mjlab.sensor import ContactSensor
-from mjlab.third_party.isaaclab.isaaclab.utils.math import quat_error_magnitude
+from mjlab.utils.lab_api.math import quat_error_magnitude
 
 from .commands import MotionCommand
 
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 def _get_body_indexes(
-  command: MotionCommand, body_names: Optional[list[str]]
+  command: MotionCommand, body_names: tuple[str, ...] | None
 ) -> list[int]:
   return [
     i
@@ -45,7 +45,7 @@ def motion_relative_body_position_error_exp(
   env: ManagerBasedRlEnv,
   command_name: str,
   std: float,
-  body_names: Optional[list[str]] = None,
+  body_names: tuple[str, ...] | None = None,
 ) -> torch.Tensor:
   command = cast(MotionCommand, env.command_manager.get_term(command_name))
   body_indexes = _get_body_indexes(command, body_names)
@@ -63,7 +63,7 @@ def motion_relative_body_orientation_error_exp(
   env: ManagerBasedRlEnv,
   command_name: str,
   std: float,
-  body_names: Optional[list[str]] = None,
+  body_names: tuple[str, ...] | None = None,
 ) -> torch.Tensor:
   command = cast(MotionCommand, env.command_manager.get_term(command_name))
   body_indexes = _get_body_indexes(command, body_names)
@@ -81,7 +81,7 @@ def motion_global_body_linear_velocity_error_exp(
   env: ManagerBasedRlEnv,
   command_name: str,
   std: float,
-  body_names: Optional[list[str]] = None,
+  body_names: tuple[str, ...] | None = None,
 ) -> torch.Tensor:
   command = cast(MotionCommand, env.command_manager.get_term(command_name))
   body_indexes = _get_body_indexes(command, body_names)
@@ -99,7 +99,7 @@ def motion_global_body_angular_velocity_error_exp(
   env: ManagerBasedRlEnv,
   command_name: str,
   std: float,
-  body_names: Optional[list[str]] = None,
+  body_names: tuple[str, ...] | None = None,
 ) -> torch.Tensor:
   command = cast(MotionCommand, env.command_manager.get_term(command_name))
   body_indexes = _get_body_indexes(command, body_names)

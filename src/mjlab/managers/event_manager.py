@@ -9,16 +9,15 @@ from prettytable import PrettyTable
 
 from mjlab.managers.manager_base import ManagerBase
 from mjlab.managers.manager_term_config import EventMode, EventTermCfg
-from mjlab.utils.dataclasses import get_terms
 
 if TYPE_CHECKING:
-  from mjlab.envs.manager_based_env import ManagerBasedEnv
+  from mjlab.envs import ManagerBasedRlEnv
 
 
 class EventManager(ManagerBase):
-  _env: ManagerBasedEnv
+  _env: ManagerBasedRlEnv
 
-  def __init__(self, cfg: object, env: ManagerBasedEnv):
+  def __init__(self, cfg: dict[str, EventTermCfg], env: ManagerBasedRlEnv):
     self.cfg = cfg
     self._mode_term_names: dict[EventMode, list[str]] = dict()
     self._mode_term_cfgs: dict[EventMode, list[EventTermCfg]] = dict()
@@ -68,8 +67,8 @@ class EventManager(ManagerBase):
     return list(self._mode_term_names.keys())
 
   @property
-  def domain_randomization_fields(self) -> list[str]:
-    return self._domain_randomization_fields
+  def domain_randomization_fields(self) -> tuple[str, ...]:
+    return tuple(self._domain_randomization_fields)
 
   # Methods.
 
@@ -179,8 +178,7 @@ class EventManager(ManagerBase):
     self._reset_term_last_triggered_step_id: list[torch.Tensor] = list()
     self._reset_term_last_triggered_once: list[torch.Tensor] = list()
 
-    cfg_items = get_terms(self.cfg, EventTermCfg).items()
-    for term_name, term_cfg in cfg_items:
+    for term_name, term_cfg in self.cfg.items():
       term_cfg: EventTermCfg | None
       if term_cfg is None:
         print(f"term: {term_name} set to None, skipping...")
@@ -215,7 +213,7 @@ class EventManager(ManagerBase):
         no_trigger = torch.zeros(self.num_envs, device=self.device, dtype=torch.bool)
         self._reset_term_last_triggered_once.append(no_trigger)
 
-      if term_cfg.func.__name__ == "randomize_field":
+      if term_cfg.domain_randomization:
         field_name = term_cfg.params["field"]
         if field_name not in self._domain_randomization_fields:
           self._domain_randomization_fields.append(field_name)

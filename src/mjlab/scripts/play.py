@@ -4,27 +4,21 @@ import os
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Literal, Optional, cast
+from typing import Literal
 
-import gymnasium as gym
 import torch
 import tyro
 from rsl_rl.runners import OnPolicyRunner
 
-from mjlab.envs import ManagerBasedRlEnvCfg
-from mjlab.rl import RslRlOnPolicyRunnerCfg, RslRlVecEnvWrapper
+from mjlab.envs import ManagerBasedRlEnv
+from mjlab.rl import RslRlVecEnvWrapper
+from mjlab.tasks.registry import list_tasks, load_env_cfg, load_rl_cfg
+from mjlab.tasks.tracking.mdp import MotionCommandCfg
 from mjlab.tasks.tracking.rl import MotionTrackingOnPolicyRunner
-from mjlab.tasks.tracking.tracking_env_cfg import TrackingEnvCfg
-from mjlab.third_party.isaaclab.isaaclab_tasks.utils.parse_cfg import (
-  load_cfg_from_registry,
-)
 from mjlab.utils.os import get_wandb_checkpoint_path
 from mjlab.utils.torch import configure_torch_backends
-from mjlab.viewer import NativeMujocoViewer, ViserViewer
-from mjlab.viewer.base import EnvProtocol
-
-ViewerChoice = Literal["auto", "native", "viser"]
-ResolvedViewer = Literal["native", "viser"]
+from mjlab.utils.wrappers import VideoRecorder
+from mjlab.viewer import NativeMujocoViewer, ViserPlayViewer
 
 
 @dataclass(frozen=True)
@@ -41,18 +35,10 @@ class PlayConfig:
   video_height: int | None = None
   video_width: int | None = None
   camera: int | str | None = None
-  viewer: ViewerChoice = "auto"
+  viewer: Literal["auto", "native", "viser"] = "auto"
 
-
-def _resolve_viewer_choice(choice: ViewerChoice) -> ResolvedViewer:
-  """Resolve viewer choice, defaulting to web viewer when no display is present."""
-  if choice != "auto":
-    return cast(ResolvedViewer, choice)
-
-  has_display = bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
-  resolved: ResolvedViewer = "native" if has_display else "viser"
-  print(f"[INFO]: Auto-selected viewer: {resolved} (display detected: {has_display})")
-  return resolved
+  # Internal flag used by demo script.
+  _demo_mode: tyro.conf.Suppress[bool] = False
 
 
 def run_play(task: str, cfg: PlayConfig):
@@ -60,37 +46,49 @@ def run_play(task: str, cfg: PlayConfig):
 
   device = cfg.device or ("cuda:0" if torch.cuda.is_available() else "cpu")
 
-  env_cfg = cast(
-    ManagerBasedRlEnvCfg, load_cfg_from_registry(task, "env_cfg_entry_point")
-  )
-  agent_cfg = cast(
-    RslRlOnPolicyRunnerCfg, load_cfg_from_registry(task, "rl_cfg_entry_point")
-  )
+  env_cfg = load_env_cfg(task, play=True)
+  agent_cfg = load_rl_cfg(task)
 
   DUMMY_MODE = cfg.agent in {"zero", "random"}
   TRAINED_MODE = not DUMMY_MODE
 
-  if isinstance(env_cfg, TrackingEnvCfg):
+  # Check if this is a tracking task by checking for motion command.
+  is_tracking_task = (
+    env_cfg.commands is not None
+    and "motion" in env_cfg.commands
+    and isinstance(env_cfg.commands["motion"], MotionCommandCfg)
+  )
+
+  if is_tracking_task and cfg._demo_mode:
+    # Demo mode: use uniform sampling to see more diversity with num_envs > 1.
+    assert env_cfg.commands is not None
+    motion_cmd = env_cfg.commands["motion"]
+    assert isinstance(motion_cmd, MotionCommandCfg)
+    motion_cmd.sampling_mode = "uniform"
+
+  if is_tracking_task:
+    assert env_cfg.commands is not None
+    motion_cmd = env_cfg.commands["motion"]
+    assert isinstance(motion_cmd, MotionCommandCfg)
+
     if DUMMY_MODE:
       if not cfg.registry_name:
         raise ValueError(
           "Tracking tasks require `registry_name` when using dummy agents."
         )
       # Check if the registry name includes alias, if not, append ":latest".
-      registry_name = cast(str, cfg.registry_name)
+      registry_name = cfg.registry_name
       if ":" not in registry_name:
         registry_name = registry_name + ":latest"
       import wandb
 
       api = wandb.Api()
       artifact = api.artifact(registry_name)
-      env_cfg.commands.motion.motion_file = str(
-        Path(artifact.download()) / "motion.npz"
-      )
+      motion_cmd.motion_file = str(Path(artifact.download()) / "motion.npz")
     else:
       if cfg.motion_file is not None:
         print(f"[INFO]: Using motion file from CLI: {cfg.motion_file}")
-        env_cfg.commands.motion.motion_file = cfg.motion_file
+        motion_cmd.motion_file = cfg.motion_file
       else:
         import wandb
 
@@ -107,10 +105,10 @@ def run_play(task: str, cfg: PlayConfig):
           )
           if art is None:
             raise RuntimeError("No motion artifact found in the run.")
-          env_cfg.commands.motion.motion_file = str(Path(art.download()) / "motion.npz")
+          motion_cmd.motion_file = str(Path(art.download()) / "motion.npz")
 
-  log_dir: Optional[Path] = None
-  resume_path: Optional[Path] = None
+  log_dir: Path | None = None
+  resume_path: Path | None = None
   if TRAINED_MODE:
     log_root_path = (Path("logs") / "rsl_rl" / agent_cfg.experiment_name).resolve()
     if cfg.checkpoint_file is not None:
@@ -126,7 +124,7 @@ def run_play(task: str, cfg: PlayConfig):
       resume_path, was_cached = get_wandb_checkpoint_path(
         log_root_path, Path(cfg.wandb_run_path)
       )
-      # Extract run_id and checkpoint name from path for display
+      # Extract run_id and checkpoint name from path for display.
       run_id = resume_path.parent.name
       checkpoint_name = resume_path.name
       cached_str = "cached" if was_cached else "downloaded"
@@ -147,13 +145,14 @@ def run_play(task: str, cfg: PlayConfig):
     print(
       "[WARN] Video recording with dummy agents is disabled (no checkpoint/log_dir)."
     )
-  env = gym.make(task, cfg=env_cfg, device=device, render_mode=render_mode)
+  env = ManagerBasedRlEnv(cfg=env_cfg, device=device, render_mode=render_mode)
 
   if TRAINED_MODE and cfg.video:
     print("[INFO] Recording videos during play")
-    env = gym.wrappers.RecordVideo(
+    assert log_dir is not None  # log_dir is set in TRAINED_MODE block
+    env = VideoRecorder(
       env,
-      video_folder=str(Path(log_dir) / "videos" / "play"),  # type: ignore[arg-type]
+      video_folder=log_dir / "videos" / "play",
       step_trigger=lambda step: step == 0,
       video_length=cfg.video_length,
       disable_logger=True,
@@ -179,7 +178,7 @@ def run_play(task: str, cfg: PlayConfig):
 
       policy = PolicyRandom()
   else:
-    if isinstance(env_cfg, TrackingEnvCfg):
+    if is_tracking_task:
       runner = MotionTrackingOnPolicyRunner(
         env, asdict(agent_cfg), log_dir=str(log_dir), device=device
       )
@@ -190,12 +189,18 @@ def run_play(task: str, cfg: PlayConfig):
     runner.load(str(resume_path), map_location=device)
     policy = runner.get_inference_policy(device=device)
 
-  resolved_viewer = _resolve_viewer_choice(cfg.viewer)
+  # Handle "auto" viewer selection.
+  if cfg.viewer == "auto":
+    has_display = bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
+    resolved_viewer = "native" if has_display else "viser"
+    del has_display
+  else:
+    resolved_viewer = cfg.viewer
 
   if resolved_viewer == "native":
-    NativeMujocoViewer(cast(EnvProtocol, env), policy).run()
+    NativeMujocoViewer(env, policy).run()
   elif resolved_viewer == "viser":
-    ViserViewer(cast(EnvProtocol, env), policy).run()
+    ViserPlayViewer(env, policy).run()
   else:
     raise RuntimeError(f"Unsupported viewer backend: {resolved_viewer}")
 
@@ -204,20 +209,18 @@ def run_play(task: str, cfg: PlayConfig):
 
 def main():
   # Parse first argument to choose the task.
-  task_prefix = "Mjlab-"
+  # Import tasks to populate the registry.
+  import mjlab.tasks  # noqa: F401
+
+  all_tasks = list_tasks()
   chosen_task, remaining_args = tyro.cli(
-    tyro.extras.literal_type_from_choices(
-      [k for k in gym.registry.keys() if k.startswith(task_prefix)]
-    ),
+    tyro.extras.literal_type_from_choices(all_tasks),
     add_help=False,
     return_unknown_args=True,
   )
-  del task_prefix
 
   # Parse the rest of the arguments + allow overriding env_cfg and agent_cfg.
-  env_cfg = load_cfg_from_registry(chosen_task, "env_cfg_entry_point")
-  agent_cfg = load_cfg_from_registry(chosen_task, "rl_cfg_entry_point")
-  assert isinstance(agent_cfg, RslRlOnPolicyRunnerCfg)
+  agent_cfg = load_rl_cfg(chosen_task)
 
   args = tyro.cli(
     PlayConfig,
@@ -229,7 +232,7 @@ def main():
       tyro.conf.FlagConversionOff,
     ),
   )
-  del env_cfg, agent_cfg, remaining_args
+  del remaining_args, agent_cfg
 
   run_play(chosen_task, args)
 
