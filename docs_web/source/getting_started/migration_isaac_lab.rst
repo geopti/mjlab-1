@@ -1,18 +1,7 @@
-.. _migration_guide:
+.. _migration-isaac-lab:
 
 Migration from Isaac Lab
 ========================
-
-.. attention::
-    
-    **🚧 Work in Progress:** This guide is actively being 
-    improved as more users onboard and find issues. If 
-    something isn't covered here, please 
-    open an issue (https://github.com/mujocolab/mjlab/issues) or 
-    start a discussion 
-    (https://github.com/mujocolab/mjlab/discussions). Your 
-    questions help us improve the docs!
-
 
 TL;DR
 -----

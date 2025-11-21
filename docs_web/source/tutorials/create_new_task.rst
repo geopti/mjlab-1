@@ -1,4 +1,4 @@
-.. _create_new_task:
+.. _create-new-task:
 
 Create a New Task
 =================

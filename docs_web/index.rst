@@ -2,38 +2,74 @@ Welcome to mjlab!
 =================
 
 .. figure:: source/_static/mjlab-banner.jpg
-   :width: 100%            
-   :alt: mjlab   
+   :width: 100%
+   :alt: mjlab
 
 What is mjlab?
 ==============
 
 **mjlab = Isaac Lab's API + MuJoCo's simplicity + GPU acceleration**
 
-We took Isaac Lab's proven manager-based architecture and RL abstractions, 
-then built them directly on MuJoCo Warp. No translation layers, no Omniverse 
-overhead. Just fast, transparent physics.
+mjlab takes Isaac Lab's proven manager-based architecture and RL abstractions,  
+and builds them directly on top of MuJoCo Warp. No translation layer, no Omniverse  
+runtime, just fast and transparent physics.
 
-License
-=======
+- **Familiar API** for Isaac Lab users (managers, configs, tasks).
+- **GPU-accelerated MuJoCo** via MuJoCo Warp for large-scale RL.
+- **Open-source and research-friendly**, with a clean Python API.
 
-mjlab is licensed under the Apache License, Version 2.0. Please refer 
-to `License <https://github.com/mujocolab/mjlab/blob/main/LICENSE/>`_ for more details
+Who is mjlab for?
+=================
 
-Acknowledgment
-==============
+mjlab is designed for:
 
-mjlab wouldn't exist without the excellent work of the Isaac 
-Lab team, whose API design and abstractions mjlab builds upon.
+- **RL researchers** who want Isaac Lab–style tasks and abstractions without Omniverse.
+- **Robotics engineers** who already use MuJoCo and want a scalable RL stack on top.
+- **Isaac Lab / Isaac Gym users** looking for a lighter-weight, more transparent backend.
 
-Thanks to the MuJoCo Warp team — especially Erik Frey and 
-Taylor Howell — for answering our questions, giving helpful 
-feedback, and implementing features based on our requests 
-countless times.
+System requirements
+===================
 
-If you used mjlab in your research, we would appreciate it if you could cite it:
+.. note::
 
-.. code:: bibtex
+   - **GPU**: NVIDIA GPU with recent drivers (for MuJoCo Warp acceleration).
+   - **OS**: Linux recommended. macOS is supported for evaluation only (significantly slower).
+   - **Python**: 3.11 (other versions may work but are not officially supported yet).
+
+Quick start
+===========
+
+You can try mjlab *without installing anything* by using `uvx`:
+
+.. code-block:: bash
+
+   # Install uv if you haven't already
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+
+   # Run the mjlab demo (no local installation needed)
+   uvx --from mjlab \
+       --with "mujoco-warp @ git+https://github.com/google-deepmind/mujoco_warp@486642c3fa262a989b482e0e506716d5793d61a9" \
+       demo
+
+If this runs and opens a viewer / logs a rollout, your setup is compatible with mjlab.
+
+Next steps
+==========
+
+- :doc:`Getting started / Installation guide <source/getting_started/installation>`
+- :doc:`Tutorial: Create a task <source/tutorials/create_new_task>`
+- :doc:`Migration from Isaac Lab <source/getting_started/migration_isaac_lab>`
+- :doc:`Migration from Isaac Gym <source/getting_started/migration_isaac_gym>`
+
+License & citation
+==================
+
+mjlab is licensed under the Apache License, Version 2.0.  
+Please refer to the `LICENSE file <https://github.com/mujocolab/mjlab/blob/main/LICENSE/>`_ for details.
+
+If you use mjlab in your research, we would appreciate a citation:
+
+.. code-block:: bibtex
 
     @software{Zakka_MJLab_Isaac_Lab_2025,
         author = {Zakka, Kevin and Yi, Brent and Liao, Qiayuan and Le Lay, Louis},
@@ -45,6 +81,15 @@ If you used mjlab in your research, we would appreciate it if you could cite it:
         year = {2025}
     }
 
+Acknowledgments
+===============
+
+mjlab would not exist without the excellent work of the Isaac Lab team, whose API design
+and abstractions mjlab builds upon.
+
+Thanks also to the MuJoCo Warp team — especially Erik Frey and Taylor Howell — for 
+answering our questions, giving helpful feedback, and implementing features based 
+on our requests countless times.
 
 Table of Contents
 =================
@@ -53,16 +98,22 @@ Table of Contents
    :maxdepth: 1
    :caption: Getting Started
 
-   source/starting/installation_guide
-   source/starting/migration_guide
-   source/starting/create_new_task
+   source/getting_started/installation
+   source/getting_started/migration_isaac_lab
+   source/getting_started/migration_isaac_gym
 
 .. toctree::
    :maxdepth: 1
-   :caption: Overview
+   :caption: About the Project
 
-   source/overview/motivation
-   source/overview/faq
+   source/project/motivation
+   source/project/faq
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Tutorials
+
+   source/tutorials/create_new_task
 
 .. toctree::
    :maxdepth: 1
