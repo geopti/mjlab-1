@@ -10,34 +10,9 @@ What is mjlab?
 
 **mjlab = Isaac Lab's API + MuJoCo's simplicity + GPU acceleration**
 
-mjlab takes Isaac Lab's proven manager-based architecture and RL abstractions,  
-and builds them directly on top of MuJoCo Warp. No translation layer, no Omniverse  
-runtime, just fast and transparent physics.
-
-- **Familiar API** for Isaac Lab users (managers, configs, tasks).
-- **GPU-accelerated MuJoCo** via MuJoCo Warp for large-scale RL.
-- **Open-source and research-friendly**, with a clean Python API.
-
-Who is mjlab for?
-=================
-
-mjlab is designed for:
-
-- **RL researchers** who want Isaac Lab–style tasks and abstractions without Omniverse.
-- **Robotics engineers** who already use MuJoCo and want a scalable RL stack on top.
-- **Isaac Lab / Isaac Gym users** looking for a lighter-weight, more transparent backend.
-
-System requirements
-===================
-
-.. note::
-
-   - **GPU**: NVIDIA GPU with recent drivers (for MuJoCo Warp acceleration).
-   - **OS**: Linux recommended. macOS is supported for evaluation only (significantly slower).
-   - **Python**: 3.11 (other versions may work but are not officially supported yet).
-
-Quick start
-===========
+We took Isaac Lab's proven manager-based architecture and RL abstractions, 
+then built them directly on MuJoCo Warp. No translation layers, no Omniverse 
+overhead. Just fast, transparent physics.
 
 You can try mjlab *without installing anything* by using `uvx`:
 
@@ -51,15 +26,7 @@ You can try mjlab *without installing anything* by using `uvx`:
        --with "mujoco-warp @ git+https://github.com/google-deepmind/mujoco_warp@486642c3fa262a989b482e0e506716d5793d61a9" \
        demo
 
-If this runs and opens a viewer / logs a rollout, your setup is compatible with mjlab.
-
-Next steps
-==========
-
-- :doc:`Getting started / Installation guide <source/getting_started/installation>`
-- :doc:`Tutorial: Create a task <source/tutorials/create_new_task>`
-- :doc:`Migration from Isaac Lab <source/getting_started/migration_isaac_lab>`
-- :doc:`Migration from Isaac Gym <source/getting_started/migration_isaac_gym>`
+If this runs, your setup is compatible with mjlab *for evaluation*.
 
 License & citation
 ==================
