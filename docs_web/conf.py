@@ -64,11 +64,14 @@ autodoc_member_order = "bysource"
 autodoc_inherit_docstrings = True
 bibtex_bibfiles = ["source/_static/refs.bib"]
 autosummary_generate = True
-autosummary_generate_overwrite = False
+autosummary_generate_overwrite = True
 autodoc_default_options = {
   "members": True,
+  "undoc-members": True,
+  "show-inheritance": True,
+  "member-order": "bysource",
+  "autosummary": True,
 }
-
 intersphinx_mapping = {
   "python": ("https://docs.python.org/3", None),
 }
@@ -104,6 +107,7 @@ autodoc_mock_imports = [
   "rsl_rl",
   "viser",
   "wandb",
+  "torchvision",
 ]
 
 suppress_warnings = [

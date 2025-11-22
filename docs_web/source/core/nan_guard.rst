@@ -96,6 +96,7 @@ Use the interactive viewer to scrub through captured states:
    :alt: NaN Debug Viewer  
 
 The viewer provides:
+
 - Step slider to scrub through the buffer
 - Environment slider to compare different environments
 - Info panel showing which environments have NaN/Inf
@@ -147,5 +148,6 @@ metrics.
     metrics carefully.
 
 **When to use which:**
+
 - ``nan_guard``: Debug and understand why NaNs occur (always do this first)
 - ``nan_detection``: Keep training stable while working on a permanent fix
