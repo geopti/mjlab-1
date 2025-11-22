@@ -11,10 +11,13 @@ choose the one that best fits your use case.
 
     **System Requirements**
 
-    - **Operating System**: Linux recommended (`installation-platform-notes`)
+    - **Operating System**: Linux recommended
     - **Python**: 3.10 or higher
     - **GPU**: NVIDIA GPU
-    - **CUDA version**: CUDA 12.4+ recommended (`cuda-notes`)
+    - **CUDA version**: CUDA 12.4+ Recommended
+
+    See :ref:`faq` for more details on what is exactly supported.
+
 
 How to choose an installation method?
 -------------------------------------
@@ -57,7 +60,7 @@ Method 1 – Use mjlab as a dependency (uv)
 This is our recommended way to use ``mjlab``. You have
 your own project and want to use ``mjlab`` as a dependency
 using ``uv``. If you do not know how to get your own
-project started, we advise you to take a look at `docs-create-ext-project`.
+project started, we advise you to take a look at :ref:`ext-project`.
 
 Install uv
 ^^^^^^^^^^
@@ -67,7 +70,6 @@ If you do not have ``uv`` installed, run:
 .. code-block:: bash
 
    curl -LsSf https://astral.sh/uv/install.sh | sh
-
 
 
 Add mjlab dependency
@@ -119,6 +121,7 @@ install. These options are interchangeable: you can switch at any time.
       .. code:: bash
 
          uv add --editable /path/to/cloned/mjlab
+
 
 Verification
 ^^^^^^^^^^^^
@@ -217,6 +220,7 @@ Install mjlab and dependencies via pip
          the GitHub dependency specified in ``pyproject.toml`` (which uses uv-specific
          syntax).
 
+
 Verification
 ^^^^^^^^^^^^
 
@@ -235,6 +239,7 @@ Method 4 – Docker / clusters
 This method is recommended if you prefer running ``mjlab`` in containers (for example on
 servers or clusters).
 
+
 Prerequisites
 ^^^^^^^^^^^^^
 
@@ -244,6 +249,7 @@ Prerequisites
    
   - Be sure to register the container runtime with Docker and restart, as described in
     the Docker configuration section of the NVIDIA install guide.
+
 
 Build the Docker image
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -284,7 +290,7 @@ Having some troubles?
 
 1. **Check the FAQ**
 
-    Consult the mjlab `FAQ <faq>`_ for answers to common installation and runtime issues
+    Consult the mjlab :ref:`faq` for answers to common installation and runtime issues
 
 2. **Still stuck?** 
 

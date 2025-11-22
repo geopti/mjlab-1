@@ -145,6 +145,12 @@ html_theme_options = {
       "type": "fontawesome",
     },
     {
+        "name": "mjlab",
+        "url": "https://github.com/mujocolab/mjlab",
+        "icon": "https://img.shields.io/badge/mjlab-0.1.0-silver.svg",
+        "type": "url",
+    },
+    {
       "name": "Stars",
       "url": "https://img.shields.io/github/stars/mujocolab/mjlab?color=fedcba",
       "icon": "https://img.shields.io/github/stars/mujocolab/mjlab?color=fedcba",

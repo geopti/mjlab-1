@@ -80,7 +80,15 @@ Table of Contents
    :maxdepth: 1
    :caption: Tutorials
 
-   source/tutorials/create_new_task
+   source/tutorials/ext_project
+   source/tutorials/new_robot
+   source/tutorials/new_task
+
+.. toctree::
+   :maxdepth: 1
+   :caption: How-to
+
+   source/how_to/new_object
 
 .. toctree::
    :maxdepth: 1
