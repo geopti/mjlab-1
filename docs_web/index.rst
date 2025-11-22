@@ -67,7 +67,6 @@ Table of Contents
 
    source/getting_started/installation
    source/getting_started/migration_isaac_lab
-   source/getting_started/migration_isaac_gym
 
 .. toctree::
    :maxdepth: 1
