@@ -74,6 +74,7 @@ Table of Contents
 
    source/project/motivation
    source/project/faq
+   source/project/contributing
 
 .. toctree::
    :maxdepth: 1

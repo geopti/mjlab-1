@@ -3,6 +3,10 @@
 Why mjlab?
 ==========
 
+.. contents::
+   :local:
+   :depth: 1
+
 The Problem
 -----------
 

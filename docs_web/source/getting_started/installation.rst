@@ -7,6 +7,10 @@ Installation Guide
 This guide presents different installation paths so you can
 choose the one that best fits your use case.
 
+.. contents::
+   :local:
+   :depth: 1
+
 .. note::
 
     **System Requirements**
