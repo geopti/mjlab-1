@@ -34,8 +34,10 @@ class BuiltinPositionActuatorCfg(ActuatorCfg):
 
   stiffness: float
   """PD proportional gain."""
+
   damping: float
   """PD derivative gain."""
+
   effort_limit: float | None = None
   """Maximum actuator force/torque. If None, no limit is applied."""
 
@@ -87,6 +89,7 @@ class BuiltinMotorActuatorCfg(ActuatorCfg):
 
   effort_limit: float
   """Maximum actuator effort."""
+
   gear: float = 1.0
   """Actuator gear ratio."""
 
@@ -137,6 +140,7 @@ class BuiltinVelocityActuatorCfg(ActuatorCfg):
 
   damping: float
   """Damping gain."""
+  
   effort_limit: float | None = None
   """Maximum actuator force/torque. If None, no limit is applied."""
 

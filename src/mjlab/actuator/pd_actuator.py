@@ -24,8 +24,10 @@ class IdealPdActuatorCfg(ActuatorCfg):
 
   stiffness: float
   """PD stiffness (proportional gain)."""
+
   damping: float
   """PD damping (derivative gain)."""
+
   effort_limit: float = float("inf")
   """Maximum force/torque limit."""
 
@@ -110,9 +112,9 @@ class IdealPdActuator(Actuator, Generic[IdealPdCfgT]):
     """Set PD gains for specified environments.
 
     Args:
-      env_ids: Environment indices to update.
-      kp: New proportional gains. Shape: (num_envs, num_actuators) or (num_envs,).
-      kd: New derivative gains. Shape: (num_envs, num_actuators) or (num_envs,).
+        env_ids: Environment indices to update.
+        kp: New proportional gains. Shape: (num_envs, num_actuators) or (num_envs,).
+        kd: New derivative gains. Shape: (num_envs, num_actuators) or (num_envs,).
     """
     assert self.stiffness is not None
     assert self.damping is not None
@@ -133,8 +135,8 @@ class IdealPdActuator(Actuator, Generic[IdealPdCfgT]):
     """Set effort limits for specified environments.
 
     Args:
-      env_ids: Environment indices to update.
-      effort_limit: New effort limits. Shape: (num_envs, num_actuators) or (num_envs,).
+        env_ids: Environment indices to update.
+        effort_limit: New effort limits. Shape: (num_envs, num_actuators) or (num_envs,).
     """
     assert self.force_limit is not None
 

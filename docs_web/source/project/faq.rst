@@ -73,7 +73,6 @@ My training crashes with NaN errors
    you handle this:
 
    1. **For training stability** – NaN termination
-   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
    Add a ``nan_detection`` termination to reset environments that hit NaN:
 
@@ -107,7 +106,6 @@ My training crashes with NaN errors
       termination.
 
    2. **For debugging** – NaN guard
-   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
    Enable ``nan_guard`` to capture the simulation state when NaNs occur:
 

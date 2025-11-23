@@ -1,3 +1,9 @@
+"""Entity API.
+
+This module defines :class:`mjlab.entity.entity.Entity` and related
+configuration / data structures. See the high-level "Entities" section
+in the user guide for an overview.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -89,20 +95,20 @@ class Entity:
   """An entity represents a physical object in the simulation.
 
   Entity Type Matrix
-  ==================
+  ------------------
 
   MuJoCo entities can be categorized along two dimensions:
 
-  1. Base Type:
+  **Base Type**
+  
+  - Fixed Base: Entity is welded to the world (no freejoint)
+  - Floating Base: Entity has 6 DOF movement (has freejoint)
 
-    - Fixed Base: Entity is welded to the world (no freejoint)
-    - Floating Base: Entity has 6 DOF movement (has freejoint)
 
-
-  2. Articulation:
-
-    - Non-articulated: No joints other than freejoint
-    - Articulated: Has joints in kinematic tree (may or may not be actuated)
+  **Articulation**
+  
+  - Non-articulated: No joints other than freejoint
+  - Articulated: Has joints in kinematic tree (may or may not be actuated)
 
 
   Fixed non-articulated entities can optionally be mocap bodies, whereby their
@@ -111,14 +117,17 @@ class Entity:
   adjustable position and orientation.
 
   Supported Combinations:
-  -----------------------
+  ~~~~~~~~~~~~~~~~~~~~~~~
 
   +---------------------------+----------------------+---------------+----------------+-------------+
   | Type                      | Example              | is_fixed_base | is_articulated | is_actuated |
-  +---------------------------+----------------------+---------------+----------------+-------------+
+  +===========================+======================+===============+================+=============+
   | Fixed Non-articulated     | Table, wall,         | True          | False          | False       |
+  +---------------------------+----------------------+---------------+----------------+-------------+
   | Fixed Articulated         | Robot arm, door      | True          | True           | True/False  |
+  +---------------------------+----------------------+---------------+----------------+-------------+
   | Floating Non-articulated  | Box, ball, mug       | False         | False          | False       |
+  +---------------------------+----------------------+---------------+----------------+-------------+
   | Floating Articulated      | Humanoid, quadruped  | False         | True           | True/False  |
   +---------------------------+----------------------+---------------+----------------+-------------+
 
@@ -495,9 +504,9 @@ class Entity:
     of 13 values. All of the quantities are in the world frame.
 
     Args:
-      root_state: Tensor of shape (N, 13) where N is the number of environments.
-      env_ids: Optional tensor or slice specifying which environments to set. If
-        None, all environments are set.
+        root_state: Tensor of shape (N, 13) where N is the number of environments.
+        env_ids: Optional tensor or slice specifying which environments to set. If 
+            None, all environments are set.
     """
     self._data.write_root_state(root_state, env_ids)
 
@@ -510,9 +519,9 @@ class Entity:
     but only sets position and orientation.
 
     Args:
-      root_pose: Tensor of shape (N, 7) where N is the number of environments.
-      env_ids: Optional tensor or slice specifying which environments to set. If
-        None, all environments are set.
+        root_pose: Tensor of shape (N, 7) where N is the number of environments.
+        env_ids: Optional tensor or slice specifying which environments to set. If
+            None, all environments are set.
     """
     self._data.write_root_pose(root_pose, env_ids)
 
@@ -525,10 +534,10 @@ class Entity:
     but only sets linear and angular velocity.
 
     Args:
-      root_velocity: Tensor of shape (N, 6) where N is the number of environments.
-        Contains linear velocity (3) and angular velocity (3), both in world frame.
-      env_ids: Optional tensor or slice specifying which environments to set. If
-        None, all environments are set.
+        root_velocity: Tensor of shape (N, 6) where N is the number of environments.
+            Contains linear velocity (3) and angular velocity (3), both in world frame.
+        env_ids: Optional tensor or slice specifying which environments to set. If
+            None, all environments are set.
     """
     self._data.write_root_velocity(root_velocity, env_ids)
 
@@ -545,12 +554,12 @@ class Entity:
     the root state.
 
     Args:
-      position: Tensor of shape (N, num_joints) where N is the number of environments.
-      velocity: Tensor of shape (N, num_joints) where N is the number of environments.
-      joint_ids: Optional tensor or slice specifying which joints to set. If None,
-        all joints are set.
-      env_ids: Optional tensor or slice specifying which environments to set. If
-        None, all environments are set.
+        position: Tensor of shape (N, num_joints) where N is the number of environments.
+        velocity: Tensor of shape (N, num_joints) where N is the number of environments.
+        joint_ids: Optional tensor or slice specifying which joints to set. If None,
+            all joints are set.
+        env_ids: Optional tensor or slice specifying which environments to set. If
+            None, all environments are set.
     """
     self._data.write_joint_state(position, velocity, joint_ids, env_ids)
 
@@ -564,11 +573,11 @@ class Entity:
     but only sets joint positions.
 
     Args:
-      position: Tensor of shape (N, num_joints) where N is the number of environments.
-      joint_ids: Optional tensor or slice specifying which joints to set. If None,
-        all joints are set.
-      env_ids: Optional tensor or slice specifying which environments to set. If
-        None, all environments are set.
+        position: Tensor of shape (N, num_joints) where N is the number of environments.
+        joint_ids: Optional tensor or slice specifying which joints to set. If None,
+            all joints are set.
+        env_ids: Optional tensor or slice specifying which environments to set. If
+            None, all environments are set.
     """
     self._data.write_joint_position(position, joint_ids, env_ids)
 
@@ -582,11 +591,11 @@ class Entity:
     but only sets joint velocities.
 
     Args:
-      velocity: Tensor of shape (N, num_joints) where N is the number of environments.
-      joint_ids: Optional tensor or slice specifying which joints to set. If None,
-        all joints are set.
-      env_ids: Optional tensor or slice specifying which environments to set. If
-        None, all environments are set.
+        velocity: Tensor of shape (N, num_joints) where N is the number of environments.
+        joint_ids: Optional tensor or slice specifying which joints to set. If None,
+            all joints are set.
+        env_ids: Optional tensor or slice specifying which environments to set. If
+            None, all environments are set.
     """
     self._data.write_joint_velocity(velocity, joint_ids, env_ids)
 
@@ -599,9 +608,9 @@ class Entity:
     """Set joint position targets.
 
     Args:
-      position: Target joint poisitions with shape (N, num_joints).
-      joint_ids: Optional joint indices to set. If None, set all joints.
-      env_ids: Optional environment indices. If None, set all environments.
+        position: Target joint poisitions with shape (N, num_joints).
+        joint_ids: Optional joint indices to set. If None, set all joints.
+        env_ids: Optional environment indices. If None, set all environments.
     """
     if env_ids is None:
       env_ids = slice(None)
@@ -618,9 +627,9 @@ class Entity:
     """Set joint velocity targets.
 
     Args:
-      velocity: Target joint velocities with shape (N, num_joints).
-      joint_ids: Optional joint indices to set. If None, set all joints.
-      env_ids: Optional environment indices. If None, set all environments.
+        velocity: Target joint velocities with shape (N, num_joints).
+        joint_ids: Optional joint indices to set. If None, set all joints.
+        env_ids: Optional environment indices. If None, set all environments.
     """
     if env_ids is None:
       env_ids = slice(None)
@@ -637,9 +646,9 @@ class Entity:
     """Set joint effort targets.
 
     Args:
-      effort: Target joint efforts with shape (N, num_joints).
-      joint_ids: Optional joint indices to set. If None, set all joints.
-      env_ids: Optional environment indices. If None, set all environments.
+        effort: Target joint efforts with shape (N, num_joints).
+        joint_ids: Optional joint indices to set. If None, set all joints.
+        env_ids: Optional environment indices. If None, set all environments.
     """
     if env_ids is None:
       env_ids = slice(None)
@@ -661,14 +670,14 @@ class Entity:
     the next call to this function or until the simulation is reset.
 
     Args:
-      forces: Tensor of shape (N, num_bodies, 3) where N is the number of
-        environments.
-      torques: Tensor of shape (N, num_bodies, 3) where N is the number of
-        environments.
-      env_ids: Optional tensor or slice specifying which environments to set. If
-        None, all environments are set.
-      body_ids: Optional list of body indices or slice specifying which bodies to
-        apply the wrenches to. If None, wrenches are applied to all bodies.
+        forces: Tensor of shape (N, num_bodies, 3) where N is the number of
+            environments.
+        torques: Tensor of shape (N, num_bodies, 3) where N is the number of
+            environments.
+        env_ids: Optional tensor or slice specifying which environments to set. If
+            None, all environments are set.
+        body_ids: Optional list of body indices or slice specifying which bodies to
+            apply the wrenches to. If None, wrenches are applied to all bodies.
     """
     self._data.write_external_wrench(forces, torques, body_ids, env_ids)
 
@@ -680,10 +689,10 @@ class Entity:
     """Set the pose of a mocap body into the simulation.
 
     Args:
-      mocap_pose: Tensor of shape (N, 7) where N is the number of environments.
-        Format: [pos_x, pos_y, pos_z, quat_w, quat_x, quat_y, quat_z]
-      env_ids: Optional tensor or slice specifying which environments to set. If
-        None, all environments are set.
+        mocap_pose: Tensor of shape (N, 7) where N is the number of environments.
+            Format: [pos_x, pos_y, pos_z, quat_w, quat_x, quat_y, quat_z]
+        env_ids: Optional tensor or slice specifying which environments to set. If
+            None, all environments are set.
     """
     self._data.write_mocap_pose(mocap_pose, env_ids)
 

@@ -54,7 +54,7 @@ class Scene:
     to the compiler directive in the XML.
 
     Args:
-      path: Output path for the zip file.
+        path: Output path for the zip file.
 
     TODO: Verify if this is fixed in future MuJoCo releases.
     """

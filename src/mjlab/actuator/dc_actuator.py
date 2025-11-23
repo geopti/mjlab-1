@@ -76,6 +76,7 @@ class DcMotorActuator(IdealPdActuator[DcMotorCfgT], Generic[DcMotorCfgT]):
   This actuator extends IdealPdActuator with a realistic DC motor model
   that limits torque based on current joint velocity. The model implements
   a linear torque-speed curve where:
+  
   - At zero velocity: can produce full saturation_effort (stall torque)
   - At max velocity: can produce zero torque
   - Between: torque limit varies linearly

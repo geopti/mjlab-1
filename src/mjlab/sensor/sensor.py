@@ -33,6 +33,7 @@ class Sensor(ABC, Generic[T]):
   """Base sensor interface with typed data.
 
   Type parameter T specifies the type of data returned by the sensor. For example:
+  
   - Sensor[torch.Tensor] for sensors returning raw tensors
   - Sensor[ContactData] for sensors returning structured contact data
   """
@@ -49,8 +50,8 @@ class Sensor(ABC, Generic[T]):
     to the MjSpec.
 
     Args:
-      scene_spec: The scene MjSpec to edit.
-      entities: Dictionary of entities in the scene, keyed by name.
+        scene_spec: The scene MjSpec to edit.
+        entities: Dictionary of entities in the scene, keyed by name.
     """
     raise NotImplementedError
 
@@ -68,10 +69,10 @@ class Sensor(ABC, Generic[T]):
     is ready to run. Use this to cache sensor indices, allocate buffers, etc.
 
     Args:
-      mj_model: The compiled MuJoCo model.
-      model: The mjwarp model wrapper.
-      data: The mjwarp data arrays.
-      device: Device for tensor operations (e.g., "cuda", "cpu").
+        mj_model: The compiled MuJoCo model.
+        model: The mjwarp model wrapper.
+        data: The mjwarp data arrays.
+        device: Device for tensor operations (e.g., "cuda", "cpu").
     """
     raise NotImplementedError
 
@@ -84,7 +85,7 @@ class Sensor(ABC, Generic[T]):
     The data type is specified by the type parameter T.
 
     Returns:
-      The sensor data in the format specified by type parameter T.
+        The sensor data in the format specified by type parameter T.
     """
     raise NotImplementedError
 
@@ -95,7 +96,7 @@ class Sensor(ABC, Generic[T]):
     internal state.
 
     Args:
-      env_ids: Environment indices to reset. If None, reset all environments.
+        env_ids: Environment indices to reset. If None, reset all environments.
     """
     del env_ids  # Unused.
 
@@ -106,6 +107,6 @@ class Sensor(ABC, Generic[T]):
     per-step updates.
 
     Args:
-      dt: Time step in seconds.
+        dt: Time step in seconds.
     """
     del dt  # Unused.

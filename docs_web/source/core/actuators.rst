@@ -436,7 +436,7 @@ from hardware datasheets.
 
     # Motor specs from manufacturer datasheet.
     ROTOR_INERTIAS_7520_14 = (
-        0.489e-4,  # Motor rotor inertia (kg·m²)
+        0.489e-4,  # Motor rotor inertia (kg·m**2)
         0.098e-4,  # Planet carrier inertia
         0.533e-4,  # Output stage inertia
     )
@@ -447,7 +447,7 @@ from hardware datasheets.
     )
 
     # Compute reflected inertia at joint output.
-    # J_reflected = J_motor*(N₁*N₂)² + J_carrier*N₂² + J_output.
+    # J_reflected = J_motor*(N₁*N₂)**2 + J_carrier*N₂**2 + J_output.
     ARMATURE_7520_14 = reflected_inertia_from_two_stage_planetary(
         ROTOR_INERTIAS_7520_14, GEARS_7520_14
     )
@@ -462,7 +462,7 @@ from hardware datasheets.
     # Derive PD gains from natural frequency and damping ratio.
     NATURAL_FREQ = 10 * 2*pi  # 10 Hz bandwidth.
     DAMPING_RATIO = 2.0       # Overdamped, see note below.
-    STIFFNESS = ARMATURE_7520_14 * NATURAL_FREQ²
+    STIFFNESS = ARMATURE_7520_14 * NATURAL_FREQ**2
     DAMPING = 2 * DAMPING_RATIO * ARMATURE_7520_14 * NATURAL_FREQ
 
     # Use in actuator config.

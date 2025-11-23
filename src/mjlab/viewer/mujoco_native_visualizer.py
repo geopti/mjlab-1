@@ -21,9 +21,9 @@ class MujocoNativeDebugVisualizer(DebugVisualizer):
     """Initialize the MuJoCo native visualizer.
 
     Args:
-      scn: MuJoCo scene to add visualizations to
-      mj_model: MuJoCo model for creating visualization data
-      env_idx: Index of the environment being visualized
+        scn: MuJoCo scene to add visualizations to
+        mj_model: MuJoCo model for creating visualization data
+        env_idx: Index of the environment being visualized
     """
     self.scn = scn
     self.mj_model = mj_model
@@ -85,10 +85,10 @@ class MujocoNativeDebugVisualizer(DebugVisualizer):
     This creates a semi-transparent copy of the robot geometry at the target pose.
 
     Args:
-      qpos: Joint positions for the ghost pose
-      model: MuJoCo model with pre-configured appearance (geom_rgba for colors)
-      alpha: Transparency override (not used in MuJoCo implementation)
-      label: Optional label (not used in MuJoCo implementation)
+        qpos: Joint positions for the ghost pose
+        model: MuJoCo model with pre-configured appearance (geom_rgba for colors)
+        alpha: Transparency override (not used in MuJoCo implementation)
+        label: Optional label (not used in MuJoCo implementation)
     """
     del alpha, label  # Unused.
 
@@ -123,14 +123,14 @@ class MujocoNativeDebugVisualizer(DebugVisualizer):
     This implementation reuses add_arrow to draw the three axis arrows.
 
     Args:
-      position: Position of the frame origin (3D vector)
-      rotation_matrix: Rotation matrix (3x3)
-      scale: Scale/length of the axis arrows
-      label: Optional label for this frame.
-      axis_radius: Radius of the axis arrows.
-      alpha: Opacity for all axes (0=transparent, 1=opaque).
-      axis_colors: Optional tuple of 3 RGB colors for X, Y, Z axes. If None, uses
-        default RGB coloring (X=red, Y=green, Z=blue).
+        position: Position of the frame origin (3D vector)
+        rotation_matrix: Rotation matrix (3x3)
+        scale: Scale/length of the axis arrows
+        label: Optional label for this frame.
+        axis_radius: Radius of the axis arrows.
+        alpha: Opacity for all axes (0=transparent, 1=opaque).
+        axis_colors: Optional tuple of 3 RGB colors for X, Y, Z axes. If None, uses
+            default RGB coloring (X=red, Y=green, Z=blue).
     """
     del label  # Unused.
 

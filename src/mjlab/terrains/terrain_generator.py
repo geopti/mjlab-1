@@ -39,7 +39,7 @@ class SubTerrainCfg(abc.ABC):
     """Generate terrain geometry.
 
     Returns:
-      TerrainOutput containing spawn origin and list of geometries.
+        TerrainOutput containing spawn origin and list of geometries.
     """
     raise NotImplementedError
 
@@ -202,13 +202,13 @@ class TerrainGenerator:
     """Create a terrain geometry at the specified world position.
 
     Args:
-      spec: MuJoCo spec to add geometry to.
-      world_position: World position of the terrain's corner.
-      difficulty: Difficulty parameter for terrain generation.
-      cfg: Sub-terrain configuration.
+        spec: MuJoCo spec to add geometry to.
+        world_position: World position of the terrain's corner.
+        difficulty: Difficulty parameter for terrain generation.
+        cfg: Sub-terrain configuration.
 
     Returns:
-      The spawn origin in world coordinates.
+        The spawn origin in world coordinates.
     """
     output = cfg.function(difficulty, spec, self.np_rng)
     for terrain_geom in output.geometries:

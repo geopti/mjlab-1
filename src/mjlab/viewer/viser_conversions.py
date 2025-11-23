@@ -272,11 +272,11 @@ def create_primitive_mesh(mj_model: mujoco.MjModel, geom_id: int) -> trimesh.Tri
   """Create a mesh for primitive geom types (sphere, box, capsule, cylinder, plane).
 
   Args:
-    mj_model: MuJoCo model containing geom definition
-    geom_id: Index of the geom to create mesh for
+      mj_model: MuJoCo model containing geom definition
+      geom_id: Index of the geom to create mesh for
 
   Returns:
-    Trimesh representation of the primitive geom
+      Trimesh representation of the primitive geom
   """
   size = mj_model.geom_size[geom_id]
   geom_type = mj_model.geom_type[geom_id]
@@ -343,11 +343,11 @@ def merge_geoms(mj_model: mujoco.MjModel, geom_ids: list[int]) -> trimesh.Trimes
   """Merge multiple geoms into a single trimesh.
 
   Args:
-    mj_model: MuJoCo model containing geom definitions
-    geom_ids: List of geom indices to merge
+      mj_model: MuJoCo model containing geom definitions
+      geom_ids: List of geom indices to merge
 
   Returns:
-    Single merged trimesh with all geoms transformed to their local poses
+      Single merged trimesh with all geoms transformed to their local poses
   """
   meshes = []
   for geom_id in geom_ids:
@@ -375,11 +375,11 @@ def rotation_quat_from_vectors(from_vec: np.ndarray, to_vec: np.ndarray) -> np.n
   """Compute quaternion (wxyz format) that rotates from_vec to to_vec.
 
   Args:
-    from_vec: Source vector (3D)
-    to_vec: Target vector (3D)
+      from_vec: Source vector (3D)
+      to_vec: Target vector (3D)
 
   Returns:
-    Quaternion in wxyz format that rotates from_vec to to_vec.
+      Quaternion in wxyz format that rotates from_vec to to_vec.
   """
   from_vec = from_vec / np.linalg.norm(from_vec)
   to_vec = to_vec / np.linalg.norm(to_vec)
@@ -411,11 +411,11 @@ def rotation_matrix_from_vectors(
   """Create rotation matrix that rotates from_vec to to_vec using Rodrigues formula.
 
   Args:
-    from_vec: Source vector (3D)
-    to_vec: Target vector (3D)
+      from_vec: Source vector (3D)
+      to_vec: Target vector (3D)
 
   Returns:
-    3x3 rotation matrix that rotates from_vec to to_vec.
+      3x3 rotation matrix that rotates from_vec to to_vec.
   """
   from_vec = from_vec / np.linalg.norm(from_vec)
   to_vec = to_vec / np.linalg.norm(to_vec)
@@ -445,11 +445,11 @@ def get_body_name(mj_model: mujoco.MjModel, body_id: int) -> str:
   """Get body name with fallback to ID-based name.
 
   Args:
-    mj_model: MuJoCo model
-    body_id: Body index
+      mj_model: MuJoCo model
+      body_id: Body index
 
   Returns:
-    Body name or "body_{body_id}" if name not found.
+      Body name or "body_{body_id}" if name not found.
   """
   body_name = mj_id2name(mj_model, mjtObj.mjOBJ_BODY, body_id)
   if not body_name:

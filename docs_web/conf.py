@@ -89,7 +89,6 @@ exclude_patterns = [
 
 autodoc_mock_imports = [
   "torch",
-  "numpy",
   "matplotlib",
   "scipy",
   "carb",
@@ -112,6 +111,7 @@ autodoc_mock_imports = [
 
 suppress_warnings = [
   "ref.python",
+  "docutils",
 ]
 
 language = "en"

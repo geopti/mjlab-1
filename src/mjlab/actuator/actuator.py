@@ -1,4 +1,4 @@
-"""Base actuator interface."""
+"""Base actuator interfaces and configuration."""
 
 from __future__ import annotations
 
@@ -16,9 +16,11 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class ActuatorCfg(ABC):
-  joint_names_expr: tuple[str, ...]
-  """Joints that are part of this actuator group.
+  """Configuration for actuator groups."""
 
+  joint_names_expr: tuple[str, ...]
+  """Joints that are part of this actuator group. 
+  
   Can be a tuple of joint names or tuple of regex expressions.
   """
 
@@ -26,9 +28,10 @@ class ActuatorCfg(ABC):
   """Reflected rotor inertia."""
 
   frictionloss: float = 0.0
-  """Friction loss force limit.
-
-  Applies a constant friction force opposing motion, independent of load or velocity.
+  """Friction loss force limit. 
+  
+  Applies a constant friction 
+  force opposing motion, independent of load or velocity.
   Also known as dry friction or load-independent friction.
   """
 
@@ -39,12 +42,12 @@ class ActuatorCfg(ABC):
     """Build actuator instance.
 
     Args:
-      entity: Entity this actuator belongs to.
-      joint_ids: Local joint indices (for indexing entity joint arrays).
-      joint_names: Joint names corresponding to joint_ids.
+        entity: Entity this actuator belongs to.
+        joint_ids: Local joint indices (for indexing entity joint arrays).
+        joint_names: Joint names corresponding to joint_ids.
 
     Returns:
-      Actuator instance.
+        Actuator instance.
     """
     raise NotImplementedError
 
@@ -53,18 +56,22 @@ class ActuatorCfg(ABC):
 class ActuatorCmd:
   """High-level actuator command with targets and current state.
 
-  Passed to actuator's `compute()` method to generate low-level control signals.
+  Passed to actuator's ``compute()`` method to generate low-level control signals.
   All tensors have shape (num_envs, num_joints).
   """
 
   position_target: torch.Tensor
   """Desired joint positions."""
+
   velocity_target: torch.Tensor
   """Desired joint velocities."""
+
   effort_target: torch.Tensor
   """Feedforward effort."""
+
   joint_pos: torch.Tensor
   """Current joint positions."""
+  
   joint_vel: torch.Tensor
   """Current joint velocities."""
 
@@ -109,8 +116,8 @@ class Actuator(ABC):
     This is called during entity construction, before the model is compiled.
 
     Args:
-      spec: The entity's MjSpec to edit.
-      joint_names: Names of joints controlled by this actuator.
+        spec: The entity's MjSpec to edit.
+        joint_names: Names of joints controlled by this actuator.
     """
     raise NotImplementedError
 
@@ -126,10 +133,10 @@ class Actuator(ABC):
     This is called after the MjSpec is compiled into an MjModel.
 
     Args:
-      mj_model: The compiled MuJoCo model.
-      model: The compiled mjwarp model.
-      data: The mjwarp data arrays.
-      device: Device for tensor operations (e.g., "cuda", "cpu").
+        mj_model: The compiled MuJoCo model.
+        model: The compiled mjwarp model.
+        data: The mjwarp data arrays.
+        device: Device for tensor operations (e.g., "cuda", "cpu").
     """
     del mj_model, model, data  # Unused.
     self._joint_ids = torch.tensor(
@@ -143,10 +150,10 @@ class Actuator(ABC):
     """Compute low-level actuator control signal from high-level commands.
 
     Args:
-      cmd: High-level actuator command.
+        cmd: High-level actuator command.
 
     Returns:
-      Control signal tensor of shape (num_envs, num_actuators).
+        Control signal tensor of shape (num_envs, num_actuators).
     """
     raise NotImplementedError
 
@@ -159,7 +166,7 @@ class Actuator(ABC):
     internal state.
 
     Args:
-      env_ids: Environment indices to reset. If None, reset all environments.
+        env_ids: Environment indices to reset. If None, reset all environments.
     """
     del env_ids  # Unused.
 
@@ -170,6 +177,6 @@ class Actuator(ABC):
     per-step updates.
 
     Args:
-      dt: Time step in seconds.
+        dt: Time step in seconds.
     """
     del dt  # Unused.

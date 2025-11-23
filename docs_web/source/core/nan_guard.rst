@@ -1,4 +1,4 @@
-.. _nan-guard::
+.. _nan-guard:
 
 NaN Guard
 =========
@@ -65,15 +65,14 @@ Output Format
 Each NaN detection creates timestamped files plus latest symlinks:
 
 - ``nan_dump_TIMESTAMP.npz`` - Compressed state buffer
-  - ``states_step_NNNNNN`` - Captured states for each step (shape:
-    ``[num_envs_dumped, state_size]``)
+  - ``states_step_NNNNNN`` - Captured states for each step (shape: ``[num_envs_dumped, state_size]``)
   - ``_metadata`` - Dict with ``num_envs_total``, ``nan_env_ids``, ``dumped_env_ids``, etc.
 - ``model_TIMESTAMP.mjb`` - MuJoCo model in binary format
 - ``nan_dump_latest.npz`` - Symlink to most recent dump
 - ``model_latest.mjb`` - Symlink to most recent model
 
 Visualizing Dumps
--------------
+-----------------
 
 Use the interactive viewer to scrub through captured states:
 
@@ -86,11 +85,13 @@ Use the interactive viewer to scrub through captured states:
     uv run viz-nan /tmp/mjlab/nan_dumps/nan_dump_20251014_123456.npz
 
 
-<p align="left">
-  <img alt="NaN Debug Viewer" src="../static/nan_debug.gif" width="600"/>
-</p>
+.. figure:: ../_static/content/nan_debug.gif
+   :alt: NaN Debug Viewer
+
+   NaN debug viewer.
 
 The viewer provides:
+
 - Step slider to scrub through the buffer
 - Environment slider to compare different environments
 - Info panel showing which environments have NaN/Inf
@@ -100,17 +101,17 @@ This makes it easy to see exactly what went wrong and compare crashed
 environments against clean ones.
 
 Performance
--------------
+-----------
 
 When disabled (``enabled=False``), all operations are no-ops with
 negligible overhead. When enabled, overhead scales with ``buffer_size`` and
 ``max_envs_to_capture``.
 
 Related Features
--------------
+----------------
 
-#NaN Detection Termination
--------------
+NaN Detection Termination
+-------------------------
 
 While ``nan_guard`` helps **debug** NaN issues by capturing states, you can also
 **prevent** training crashes using the ``nan_detection`` termination:
@@ -127,7 +128,7 @@ While ``nan_guard`` helps **debug** NaN issues by capturing states, you can also
             time_out=False
         )
     )
-    
+
 
 This marks NaN environments as terminated, allowing them to reset while training
 continues. Terminations are logged as ``Episode_Termination/nan_term`` in your

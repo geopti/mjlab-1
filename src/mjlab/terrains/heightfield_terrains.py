@@ -4,8 +4,8 @@ This module provides terrain generation functionality using heightfields,
 adapted from the IsaacLab terrain generation system.
 
 References:
-  IsaacLab mesh terrain implementation:
-  https://github.com/isaac-sim/IsaacLab/blob/main/source/isaaclab/isaaclab/terrains/height_field/hf_terrains.py
+    IsaacLab mesh terrain implementation:
+    https://github.com/isaac-sim/IsaacLab/blob/main/source/isaaclab/isaaclab/terrains/height_field/hf_terrains.py
 """
 
 import uuid

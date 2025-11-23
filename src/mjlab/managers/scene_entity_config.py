@@ -35,57 +35,60 @@ class SceneEntityCfg:
   This configuration allows flexible specification of entity components either by name
   or by ID. During resolution, it ensures consistency between names and IDs, and can
   optimize to slice(None) when all components are selected.
-
-  Attributes:
-    name: The name of the entity in the scene.
-    joint_names: Names of joints to include. Can be a single string or tuple.
-    joint_ids: IDs of joints to include. Can be a list or slice.
-    body_names: Names of bodies to include. Can be a single string or tuple.
-    body_ids: IDs of bodies to include. Can be a list or slice.
-    geom_names: Names of geometries to include. Can be a single string or tuple.
-    geom_ids: IDs of geometries to include. Can be a list or slice.
-    site_names: Names of sites to include. Can be a single string or tuple.
-    site_ids: IDs of sites to include. Can be a list or slice.
-    actuator_names: Names of actuators to include. Can be a single string or list.
-    actuator_ids: IDs of actuators to include. Can be a list or slice.
-    preserve_order: If True, maintains the order of components as specified. If False,
-      allows reordering for optimization.
   """
 
   name: str
+  """The name of the entity in the scene."""
 
   joint_names: str | tuple[str, ...] | None = None
+  """Names of joints to include. Can be a single string or tuple."""
+  
   joint_ids: list[int] | slice = field(default_factory=lambda: slice(None))
+  """IDs of joints to include. Can be a list or slice."""
 
   body_names: str | tuple[str, ...] | None = None
+  """Names of bodies to include. Can be a single string or tuple."""
+  
   body_ids: list[int] | slice = field(default_factory=lambda: slice(None))
+  """IDs of bodies to include. Can be a list or slice."""
 
   geom_names: str | tuple[str, ...] | None = None
+  """Names of geometries to include. Can be a single string or tuple."""
+  
   geom_ids: list[int] | slice = field(default_factory=lambda: slice(None))
+  """IDs of geometries to include. Can be a list or slice."""
 
   site_names: str | tuple[str, ...] | None = None
+  """Names of sites to include. Can be a single string or tuple."""
+  
   site_ids: list[int] | slice = field(default_factory=lambda: slice(None))
+  """IDs of sites to include. Can be a list or slice."""
 
   actuator_names: str | list[str] | None = None
+  """Names of actuators to include. Can be a single string or list."""
+  
   actuator_ids: list[int] | slice = field(default_factory=lambda: slice(None))
+  """IDs of actuators to include. Can be a list or slice."""
 
   preserve_order: bool = False
+  """If True, maintains the order of components as specified. If False, allows reordering for optimization."""
 
   def resolve(self, scene: Scene) -> None:
     """Resolve names and IDs for all configured fields.
 
     This method ensures consistency between names and IDs for each field type.
     It handles three cases:
+
     1. Both names and IDs provided: Validates they match
     2. Only names provided: Computes IDs (optimizes to slice(None) if all selected)
     3. Only IDs provided: Computes names
 
     Args:
-      scene: The scene containing the entity to resolve against.
+        scene: The scene containing the entity to resolve against.
 
     Raises:
-      ValueError: If provided names and IDs are inconsistent.
-      KeyError: If the entity name is not found in the scene.
+        ValueError: If provided names and IDs are inconsistent.
+        KeyError: If the entity name is not found in the scene.
     """
     entity = scene[self.name]
 
@@ -96,8 +99,8 @@ class SceneEntityCfg:
     """Resolve a single field's names and IDs.
 
     Args:
-      entity: The entity to resolve against.
-      config: Field configuration specifying attribute names and methods.
+        entity: The entity to resolve against.
+        config: Field configuration specifying attribute names and methods.
     """
     names = getattr(self, config.names_attr)
     ids = getattr(self, config.ids_attr)
@@ -151,7 +154,7 @@ class SceneEntityCfg:
     """Validate that provided names and IDs are consistent.
 
     Raises:
-      ValueError: If names and IDs don't match.
+        ValueError: If names and IDs don't match.
     """
     found_ids, _ = find_method(names, preserve_order=self.preserve_order)
     computed_names = [entity_all_names[i] for i in ids]
