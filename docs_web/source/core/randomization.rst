@@ -1,5 +1,3 @@
-.. _domain_randomization:
-
 Domain Randomization
 ====================
 
@@ -26,6 +24,7 @@ apply the draw.
         EventTerm,
         mode="reset",  # randomize each episode
         func=mdp.randomize_field,
+        domain_randomization=True,  # marks this as domain randomization
         params={
             "asset_cfg": SceneEntityCfg("robot", geom_names=[".*_foot.*"]),
             "field": "geom_friction",
@@ -34,6 +33,23 @@ apply the draw.
         },
     )
 
+Domain Randomization Flag
+-------------------------
+
+When creating an ``EventTerm`` for domain randomization, set ``domain_randomization=True``.
+This allows the environment to track which fields are being randomized:
+
+.. code-block:: python
+
+    EventTerm(
+        mode="reset",
+        func=mdp.randomize_field,
+        domain_randomization=True,  # required for DR tracking
+        params={"field": "geom_friction", ...},
+    )
+
+This flag is especially useful when using custom class-based event terms instead of
+``mdp.randomize_field``.
 
 Event Modes
 -----------
@@ -96,6 +112,7 @@ Friction (reset)
         EventTerm,
         mode="reset",
         func=mdp.randomize_field,
+        domain_randomization=True,
         params={
             "asset_cfg": SceneEntityCfg("robot", geom_names=[".*_foot.*"]),
             "field": "geom_friction",
@@ -105,11 +122,11 @@ Friction (reset)
     )
 
 .. note::
-    
-    **Tip:** Give your robot's collision geoms higher **priority** than terrain 
-    (geom priority defaults to 0). Then you only need to randomize robot friction. 
-    MuJoCo will use the higher-priority geom's friction in (robot, terrain) 
-    contacts.
+
+     Give your robot's collision geoms higher **priority** than terrain
+     (geom priority defaults to 0). Then you only need to randomize robot friction.
+     MuJoCo will use the higher-priority geom's friction in (robot, terrain)
+     contacts.
 
 .. code-block:: python
 
@@ -122,6 +139,7 @@ Friction (reset)
         condim=3,
     )
 
+
 Joint Offset (startup)
 ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -133,6 +151,7 @@ Randomize default joint positions to simulate joint offset calibration errors:
         EventTerm,
         mode="startup",
         func=mdp.randomize_field,
+        domain_randomization=True,
         params={
             "asset_cfg": SceneEntityCfg("robot", joint_names=[".*"]),
             "field": "qpos0",
@@ -140,6 +159,7 @@ Randomize default joint positions to simulate joint offset calibration errors:
             "operation": "add",
         },
     )
+
 
 Center of Mass (COM) (startup)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -150,13 +170,53 @@ Center of Mass (COM) (startup)
         EventTerm,
         mode="startup",
         func=mdp.randomize_field,
+        domain_randomization=True,
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names=["torso"]),
             "field": "body_ipos",
             "ranges": {0: (-0.02, 0.02), 1: (-0.02, 0.02)},
             "operation": "add",
         },
-    )   
+    ) 
+
+Custom Class-Based Event Terms
+------------------------------
+
+You can create custom event terms using classes instead of functions. This is useful
+for event terms that need to maintain state or perform initialization logic:
+
+.. code-block:: python
+
+    class RandomizeTerrainFriction:
+        """Custom event term that randomizes terrain friction."""
+
+        def __init__(self, cfg, env):
+            # Find the terrain geom index during initialization
+            self._terrain_idx = None
+            for idx, geom in enumerate(env.scene.spec.geoms):
+                if geom.name == "terrain":
+                    self._terrain_idx = idx
+
+            if self._terrain_idx is None:
+                raise ValueError("Terrain geom not found in the model.")
+
+        def __call__(self, env, env_ids, ranges):
+            """Called each time the event is triggered."""
+            from mjlab.utils.math import sample_uniform
+            env.sim.model.geom_friction[env_ids, self._terrain_idx, 0] = sample_uniform(
+                ranges[0], ranges[1], len(env_ids), env.device
+            )
+
+
+    # Use the custom class in your environment config
+    terrain_friction: EventTerm = term(
+        EventTerm,
+        mode="reset",
+        func=RandomizeTerrainFriction,
+        domain_randomization=True,
+        params={"field": "geom_friction", "ranges": (0.3, 1.2)},
+    )
+
 
 Migrating from Isaac Lab
 ------------------------

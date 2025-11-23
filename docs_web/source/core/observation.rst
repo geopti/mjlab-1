@@ -1,4 +1,4 @@
-.. _obs_history_delay:
+.. _observation:
 
 Observation History and Delay
 =============================
@@ -20,7 +20,6 @@ TL;DR
         history_length=5,        # Keep last 5 frames
         flatten_history_dim=True # Flatten for MLP: (12,) * 5 = (60,)
     )
-
 
 
 **Add delay to model sensor latency:**
@@ -84,30 +83,34 @@ Group-Level Override
 
 Apply history to all terms in a group:
 
+
 .. code-block:: python
 
     @dataclass
     class PolicyCfg(ObservationGroupCfg):
-    concatenate_terms: bool = True
-    history_length: int = 5           # Applied to all terms
-    flatten_history_dim: bool = True
+        concatenate_terms: bool = True
+        history_length: int = 5           # Applied to all terms
+        flatten_history_dim: bool = True
 
-    joint_pos: ObservationTermCfg = ObservationTermCfg(func=joint_pos)
-    joint_vel: ObservationTermCfg = ObservationTermCfg(func=joint_vel)
-    # Both terms get 5-frame history, flattened
+        joint_pos: ObservationTermCfg = ObservationTermCfg(func=joint_pos)
+        joint_vel: ObservationTermCfg = ObservationTermCfg(func=joint_vel)
+        # Both terms get 5-frame history, flattened
+
 
 Term-level settings override group settings:
 
+
 .. code-block:: python
 
     @dataclass
     class PolicyCfg(ObservationGroupCfg):
-    history_length: int = 3  # Default for group
+        history_length: int = 3  # Default for group
 
-    joint_pos: ObservationTermCfg = ObservationTermCfg(
-        func=joint_pos,
-        history_length=5  # Override: use 5 instead of 3
-    )
+        joint_pos: ObservationTermCfg = ObservationTermCfg(
+            func=joint_pos,
+            history_length=5  # Override: use 5 instead of 3
+        )
+
 
 
 Reset Behavior
@@ -115,6 +118,7 @@ Reset Behavior
 
 History buffers are cleared on environment reset. The first observation after
 reset is backfilled across all history slots, ensuring valid data from step 0.
+
 
 .. code-block:: python
 
@@ -124,6 +128,40 @@ reset is backfilled across all history slots, ensuring valid data from step 0.
     # After 2 steps
     buffer = [obs_0, obs_1, obs_2]  # Normal accumulation
 
+
+History Flattening Order (Term-Major vs Time-Major)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When ``flatten_history_dim=True`` and ``concatenate_terms=True``, mjlab uses
+**term-major** ordering, where each term's full history is flattened before
+concatenating terms:
+
+
+.. code-block:: bash
+
+    Term A: shape (num_envs, obs_dim_A) with history_length=3
+    Term B: shape (num_envs, obs_dim_B) with history_length=3
+
+    mjlab output (TERM-MAJOR):
+    [A_t0, A_t1, A_t2, B_t0, B_t1, B_t2, ...]
+     └─ all A history ─┘  └─ all B history ─┘
+
+
+An alternative approach is **time-major** (or frame-major) ordering, where
+complete observation frames are built at each timestep before concatenating
+across time:
+
+
+.. code-block:: bash
+
+    TIME-MAJOR (alternative approach):
+    [A_t0, B_t0, ..., A_t1, B_t1, ..., A_t2, B_t2, ...]
+     └─ frame t0 ──┘     └─ frame t1 ──┘     └─ frame t2 ──┘
+
+
+**Sim2sim compatibility:** If you need to transfer policies to/from frameworks
+that use time-major ordering, you will need to reorder observations. This
+affects policies trained with history but not those without.
 
 Observation Delay
 -----------------
@@ -155,17 +193,18 @@ different phase offset for update period (staggers refresh times).
 
 Understanding Delay vs Multi-Rate
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 **Delay and multi-rate are orthogonal concepts** that model different real-world
 phenomena:
 
-- Delay (``delay_min_lag`` / ``delay_max_lag``): Models sensor latency / communication
+- **Delay** (``delay_min_lag`` / ``delay_max_lag``): Models sensor latency / communication
   delay. Controls *how old* the observation is.
-- Multi-rate (``delay_update_period``): Models sensor refresh rate. Controls *how
+- **Multi-rate** (``delay_update_period``): Models sensor refresh rate. Controls *how
   often* the sensor produces a new reading.
 
 **Visualizing the difference (50Hz control = 20ms/step):**
 
-.. code-block::
+.. code-block:: bash
 
     Sensor captures:  A     B     C     D     E     F     G     H
                       ↓     ↓     ↓     ↓     ↓     ↓     ↓     ↓
@@ -191,12 +230,13 @@ phenomena:
     Both delay + multi-rate (lag=2, update_period=2):
     Sensor captures:  A     B     C     D     E     F     G     H
     You receive:      -     -     A     A     C     C     E     E
-                                 ↑same ↑     ↑same ↑     ↑same ↑
+                                  ↑same ↑     ↑same ↑     ↑same ↑
                     40ms delayed + only refreshes every 2 steps
                     Models 25Hz camera with 40ms latency
 
 
 **Real-world example - 30Hz camera at 50Hz control with 40ms latency:**
+
 
 .. code-block:: python
 
@@ -207,6 +247,7 @@ phenomena:
         delay_update_period=2,  # 25Hz refresh (approximates 30Hz)
     )
 
+
 **Common mistake:** Using only ``delay_min_lag=2, delay_max_lag=2`` gives you
 40ms latency but you still get 50 different camera frames per second. You need
 ``delay_update_period=2`` to model the slower refresh rate.
@@ -216,37 +257,33 @@ Computing Delays from Real-World Latency
 
 Convert real-world latency to simulation steps:
 
-.. code-block::
-    
-    delay_steps = latency_ms / (1000 / control_hz)
+
+delay_steps = latency_ms / (1000 / control_hz)
 
 
 **Example at 50Hz control (20ms per step):**
-
 - 40ms latency = 40 / 20 = 2 steps
 - 60ms latency = 60 / 20 = 3 steps
 - 100ms latency = 100 / 20 = 5 steps
 
 **Example at 100Hz control (10ms per step):**
-
 - 40ms latency = 40 / 10 = 4 steps
 - 60ms latency = 60 / 10 = 6 steps
 
 .. note::
-    
-    Delays are quantized to control timesteps. At 50Hz control (20ms/step),
-    you can only represent 0ms, 20ms, 40ms, 60ms, etc. To approximate a 45ms sensor,
-    use ``delay_min_lag=2, delay_max_lag=3`` which uniformly samples lag ∈ {2, 3}
-    (both inclusive), giving either 40ms or 60ms delay.
+
+     Delays are quantized to control timesteps. At 50Hz control (20ms/step),
+     you can only represent 0ms, 20ms, 40ms, 60ms, etc. To approximate a 45ms sensor,
+     use ``delay_min_lag=2, delay_max_lag=3`` which uniformly samples lag ∈ {2, 3}
+     (both inclusive), giving either 40ms or 60ms delay.
 
 Computing Multi-Rate Updates
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Convert sensor refresh rate to update period:
 
-.. code-block::
-    
-    update_period = control_hz / sensor_hz
+
+update_period = control_hz / sensor_hz
 
 
 **Example at 50Hz control:**
@@ -261,12 +298,12 @@ Convert sensor refresh rate to update period:
 - 50Hz IMU: update_period = 100 / 50 = 2 steps → **actual 50Hz** (exact)
 
 .. note::
-    
-    Since ``update_period`` must be an integer, sensor rates that don't evenly
-    divide the control frequency can only be approximated. For example, 30Hz at 50Hz
-    control needs update_period=1.67, so round to 2 → 25Hz (17% error). Higher control
-    frequencies reduce quantization error (100Hz control approximates 30Hz as 33.3Hz
-    with only 11% error).
+
+     Since ``update_period`` must be an integer, sensor rates that don't evenly
+     divide the control frequency can only be approximated. For example, 30Hz at 50Hz
+     control needs update_period=1.67, so round to 2 → 25Hz (17% error). Higher control
+     frequencies reduce quantization error (100Hz control approximates 30Hz as 33.3Hz
+     with only 11% error).
 
 Examples
 ^^^^^^^^
@@ -300,19 +337,19 @@ Examples
 
     @dataclass
     class PolicyCfg(ObservationGroupCfg):
-    # Fast encoders (no delay)
-    joint_pos: ObservationTermCfg = ObservationTermCfg(
-        func=joint_pos,
-        # delay_min_lag=0, delay_max_lag=0 (default)
-    )
+        # Fast encoders (no delay)
+        joint_pos: ObservationTermCfg = ObservationTermCfg(
+            func=joint_pos,
+            # delay_min_lag=0, delay_max_lag=0 (default)
+        )
 
-    # 25Hz camera (40-80ms latency)
-    camera: ObservationTermCfg = ObservationTermCfg(
-        func=camera_obs,
-        delay_min_lag=2,  # 40ms
-        delay_max_lag=4,  # 80ms
-        delay_update_period=2  # 25Hz (50Hz control / 2)
-    )
+        # 25Hz camera (40-80ms latency)
+        camera: ObservationTermCfg = ObservationTermCfg(
+            func=camera_obs,
+            delay_min_lag=2,  # 40ms
+            delay_max_lag=4,  # 80ms
+            delay_update_period=2  # 25Hz (50Hz control / 2)
+        )
 
 
 Processing Pipeline
@@ -320,9 +357,8 @@ Processing Pipeline
 
 Observations flow through this pipeline:
 
-.. code-block::
 
-    compute → noise → clip → scale → delay → history → flatten
+compute → noise → clip → scale → delay → history → flatten
 
 
 **Why delay before history?** History stacks delayed observations. This models

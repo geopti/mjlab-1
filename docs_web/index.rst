@@ -74,7 +74,6 @@ Table of Contents
 
    source/project/motivation
    source/project/faq
-   source/project/contributing
 
 .. toctree::
    :maxdepth: 1
@@ -94,10 +93,12 @@ Table of Contents
    :maxdepth: 1
    :caption: Core Concepts
 
-   source/core/domain_randomization
+   source/core/randomization
    source/core/nan_guard
-   source/core/obs_history_delay
-   source/core/spec_config
+   source/core/observation
+   source/core/actuators
+   source/core/sensors
+   source/core/distributed_training
 
 .. toctree::
    :maxdepth: 1
