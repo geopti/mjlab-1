@@ -42,7 +42,7 @@ class TerrainImporterCfg:
   terrain_generator: TerrainGeneratorCfg | None = None
   """Configuration for procedural terrain generation. Required when
   terrain_type is "generator"."""
-  
+
   env_spacing: float | None = 2.0
   """Distance between environment origins when using grid layout. Required for
   "plane" terrain or when no sub-terrain origins exist."""
@@ -50,7 +50,7 @@ class TerrainImporterCfg:
   max_init_terrain_level: int | None = None
   """Maximum initial difficulty level (row index) for environment placement in
   curriculum mode. None uses all available rows."""
-  
+
   num_envs: int = 1
   """Number of parallel environments to create. This will get overriden by the
   scene configuration if specified there."""

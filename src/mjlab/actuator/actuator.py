@@ -71,7 +71,7 @@ class ActuatorCmd:
 
   joint_pos: torch.Tensor
   """Current joint positions."""
-  
+
   joint_vel: torch.Tensor
   """Current joint velocities."""
 

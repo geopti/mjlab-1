@@ -85,7 +85,7 @@ class SimulationCfg:
   
   Contacts exist in large heterogenous arrays: one world may have more than nconmax
   contacts. If None, a heuristic value is used."""
-  
+
   njmax: int | None = None
   """Number of constraints to allocate per world.
   

@@ -69,7 +69,6 @@ class RslRlPpoAlgorithmCfg:
 
 @dataclass
 class RslRlBaseRunnerCfg:
-
   seed: int = 42
   """The seed for the experiment. Default is 42."""
 
@@ -121,6 +120,6 @@ class RslRlOnPolicyRunnerCfg(RslRlBaseRunnerCfg):
 
   policy: RslRlPpoActorCriticCfg = field(default_factory=RslRlPpoActorCriticCfg)
   """The policy configuration."""
-  
+
   algorithm: RslRlPpoAlgorithmCfg = field(default_factory=RslRlPpoAlgorithmCfg)
   """The algorithm configuration."""

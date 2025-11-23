@@ -101,10 +101,10 @@ class ObservationTermCfg(ManagerTermBaseCfg):
   delay_min_lag: int = 0
   """Minimum lag (in steps) for delayed observations. Lag sampled uniformly from
   [min_lag, max_lag]. Convert to ms: lag * (1000 / control_hz)."""
-  
+
   delay_max_lag: int = 0
   """Maximum lag (in steps) for delayed observations. Use min=max for constant delay."""
-  
+
   delay_per_env: bool = True
   """If True, each environment samples its own lag. If False, all environments share
   the same lag at each step."""
@@ -115,14 +115,14 @@ class ObservationTermCfg(ManagerTermBaseCfg):
 
   delay_update_period: int = 0
   """Resample lag every N steps (models multi-rate sensors). If 0, update every step."""
-  
+
   delay_per_env_phase: bool = True
   """If True and update_period > 0, stagger update timing across envs to avoid
   synchronized resampling."""
 
   history_length: int = 0
   """Number of past observations to keep in history. 0 = no history."""
-  
+
   flatten_history_dim: bool = True
   """Whether to flatten the history dimension into observation.
 

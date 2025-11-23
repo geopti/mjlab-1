@@ -42,31 +42,31 @@ class SceneEntityCfg:
 
   joint_names: str | tuple[str, ...] | None = None
   """Names of joints to include. Can be a single string or tuple."""
-  
+
   joint_ids: list[int] | slice = field(default_factory=lambda: slice(None))
   """IDs of joints to include. Can be a list or slice."""
 
   body_names: str | tuple[str, ...] | None = None
   """Names of bodies to include. Can be a single string or tuple."""
-  
+
   body_ids: list[int] | slice = field(default_factory=lambda: slice(None))
   """IDs of bodies to include. Can be a list or slice."""
 
   geom_names: str | tuple[str, ...] | None = None
   """Names of geometries to include. Can be a single string or tuple."""
-  
+
   geom_ids: list[int] | slice = field(default_factory=lambda: slice(None))
   """IDs of geometries to include. Can be a list or slice."""
 
   site_names: str | tuple[str, ...] | None = None
   """Names of sites to include. Can be a single string or tuple."""
-  
+
   site_ids: list[int] | slice = field(default_factory=lambda: slice(None))
   """IDs of sites to include. Can be a list or slice."""
 
   actuator_names: str | list[str] | None = None
   """Names of actuators to include. Can be a single string or list."""
-  
+
   actuator_ids: list[int] | slice = field(default_factory=lambda: slice(None))
   """IDs of actuators to include. Can be a list or slice."""
 

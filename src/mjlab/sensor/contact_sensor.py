@@ -133,10 +133,10 @@ class ContactData:
 
   force: torch.Tensor | None = None
   """[B, N, 3] contact frame (global if reduce="netforce" or global_frame=True)"""
-  
+
   torque: torch.Tensor | None = None
   """[B, N, 3] contact frame (global if reduce="netforce" or global_frame=True)"""
-  
+
   dist: torch.Tensor | None = None
   """[B, N] penetration depth"""
 
@@ -145,7 +145,7 @@ class ContactData:
 
   normal: torch.Tensor | None = None
   """[B, N, 3] global frame, primary→secondary"""
-  
+
   tangent: torch.Tensor | None = None
   """[B, N, 3] global frame"""
 
@@ -154,10 +154,10 @@ class ContactData:
 
   last_air_time: torch.Tensor | None = None
   """[B, N] duration of last air phase (if track_air_time=True)"""
-  
+
   current_contact_time: torch.Tensor | None = None
   """[B, N] time in contact (if track_air_time=True)"""
-  
+
   last_contact_time: torch.Tensor | None = None
   """[B, N] duration of last contact phase (if track_air_time=True)"""
 

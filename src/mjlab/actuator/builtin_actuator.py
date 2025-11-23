@@ -140,7 +140,7 @@ class BuiltinVelocityActuatorCfg(ActuatorCfg):
 
   damping: float
   """Damping gain."""
-  
+
   effort_limit: float | None = None
   """Maximum actuator force/torque. If None, no limit is applied."""
 

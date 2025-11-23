@@ -17,7 +17,7 @@ class ViewerConfig:
 
     ASSET_ROOT = enum.auto()
     """The center of the asset defined by asset_name."""
-    
+
     ASSET_BODY = enum.auto()
     """The center of the body defined by body_name in asset defined by asset_name."""
 

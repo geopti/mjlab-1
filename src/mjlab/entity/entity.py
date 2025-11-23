@@ -4,6 +4,7 @@ This module defines :class:`mjlab.entity.entity.Entity` and related
 configuration / data structures. See the high-level "Entities" section
 in the user guide for an overview.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -100,13 +101,13 @@ class Entity:
   MuJoCo entities can be categorized along two dimensions:
 
   **Base Type**
-  
+
   - Fixed Base: Entity is welded to the world (no freejoint)
   - Floating Base: Entity has 6 DOF movement (has freejoint)
 
 
   **Articulation**
-  
+
   - Non-articulated: No joints other than freejoint
   - Articulated: Has joints in kinematic tree (may or may not be actuated)
 
@@ -505,7 +506,7 @@ class Entity:
 
     Args:
         root_state: Tensor of shape (N, 13) where N is the number of environments.
-        env_ids: Optional tensor or slice specifying which environments to set. If 
+        env_ids: Optional tensor or slice specifying which environments to set. If
             None, all environments are set.
     """
     self._data.write_root_state(root_state, env_ids)

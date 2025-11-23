@@ -33,7 +33,7 @@ class Sensor(ABC, Generic[T]):
   """Base sensor interface with typed data.
 
   Type parameter T specifies the type of data returned by the sensor. For example:
-  
+
   - Sensor[torch.Tensor] for sensors returning raw tensors
   - Sensor[ContactData] for sensors returning structured contact data
   """

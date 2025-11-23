@@ -194,16 +194,15 @@ class ObjRef:
 
 @dataclass
 class BuiltinSensorCfg(SensorCfg):
-  
   sensor_type: SensorType
   """Which builtin sensor to use."""
 
   obj: ObjRef | None = None
   """The type and name of the object the sensor is attached to."""
-  
+
   ref: ObjRef | None = None
   """The type and name of object to which the frame-of-reference is attached to."""
-  
+
   cutoff: float = 0.0
   """When this value is positive, it limits the absolute value of the sensor output."""
 
