@@ -9,6 +9,15 @@ import viser.transforms as vtf
 from mujoco import mj_id2name, mjtGeom, mjtObj
 from PIL import Image
 
+# Default colors for geoms without materials.
+_DEFAULT_COLLISION_COLOR = np.array([204, 102, 102, 128], dtype=np.uint8)
+_DEFAULT_VISUAL_COLOR = np.array([31, 128, 230, 255], dtype=np.uint8)
+
+
+def rgba_to_uint8(rgba: np.ndarray) -> np.ndarray:
+  """Convert RGBA from [0,1] range to [0,255] uint8."""
+  return (rgba * 255).astype(np.uint8)
+
 
 def mujoco_mesh_to_trimesh(
   mj_model: mujoco.MjModel, geom_idx: int, verbose: bool = False
@@ -23,57 +32,38 @@ def mujoco_mesh_to_trimesh(
   Returns:
     A trimesh object with texture/material applied if available
   """
-
-  # Get the mesh ID for this geometry.
   mesh_id = mj_model.geom_dataid[geom_idx]
 
-  # Get mesh data ranges from MuJoCo.
   vert_start = int(mj_model.mesh_vertadr[mesh_id])
   vert_count = int(mj_model.mesh_vertnum[mesh_id])
   face_start = int(mj_model.mesh_faceadr[mesh_id])
   face_count = int(mj_model.mesh_facenum[mesh_id])
 
-  # Extract vertices and faces.
-  # mesh_vert shape: (total_verts_in_model, 3)
-  # We extract our mesh's vertices.
-  vertices = mj_model.mesh_vert[
-    vert_start : vert_start + vert_count
-  ]  # Shape: (vert_count, 3)
+  vertices = mj_model.mesh_vert[vert_start : vert_start + vert_count]
   assert vertices.shape == (
     vert_count,
     3,
   ), f"Expected vertices shape ({vert_count}, 3), got {vertices.shape}"
 
-  # mesh_face shape: (total_faces_in_model, 3)
-  # Each face has 3 vertex indices.
-  faces = mj_model.mesh_face[
-    face_start : face_start + face_count
-  ]  # Shape: (face_count, 3)
+  faces = mj_model.mesh_face[face_start : face_start + face_count]
   assert faces.shape == (
     face_count,
     3,
   ), f"Expected faces shape ({face_count}, 3), got {faces.shape}"
 
-  # Check if this mesh has texture coordinates.
   texcoord_adr = mj_model.mesh_texcoordadr[mesh_id]
   texcoord_num = mj_model.mesh_texcoordnum[mesh_id]
 
   if texcoord_num > 0:
-    # This mesh has UV coordinates.
     if verbose:
       print(f"Mesh has {texcoord_num} texture coordinates")
 
-    # Extract texture coordinates.
-    # mesh_texcoord is a 2D array with shape (nmeshtexcoord, 2).
     texcoords = mj_model.mesh_texcoord[texcoord_adr : texcoord_adr + texcoord_num]
     assert texcoords.shape == (
       texcoord_num,
       2,
     ), f"Expected texcoords shape ({texcoord_num}, 2), got {texcoords.shape}"
 
-    # Get per-face texture coordinate indices.
-    # For each face vertex, this tells us which texcoord to use.
-    # mesh_facetexcoord is a 2D array with shape (nmeshface, 3).
     face_texcoord_idx = mj_model.mesh_facetexcoord[face_start : face_start + face_count]
     assert face_texcoord_idx.shape == (face_count, 3), (
       f"Expected face_texcoord_idx shape ({face_count}, 3), got {face_texcoord_idx.shape}"
@@ -85,15 +75,13 @@ def mujoco_mesh_to_trimesh(
     # Duplicate vertices for each face reference.
     # faces.flatten() gives us vertex indices in order:
     # [v0_f0, v1_f0, v2_f0, v0_f1, v1_f1, v2_f1, ...].
-    new_vertices = vertices[faces.flatten()]  # Shape: (face_count * 3, 3)
+    new_vertices = vertices[faces.flatten()]
     assert new_vertices.shape == (
       face_count * 3,
       3,
     ), f"Expected new_vertices shape ({face_count * 3}, 3), got {new_vertices.shape}"
 
-    # Get UV coordinates for each duplicated vertex.
-    # face_texcoord_idx.flatten() gives us texcoord indices in the same order.
-    new_uvs = texcoords[face_texcoord_idx.flatten()]  # Shape: (face_count * 3, 2)
+    new_uvs = texcoords[face_texcoord_idx.flatten()]
     assert new_uvs.shape == (
       face_count * 3,
       2,
@@ -101,7 +89,7 @@ def mujoco_mesh_to_trimesh(
 
     # Create new faces - now just sequential since vertices are duplicated.
     # [[0, 1, 2], [3, 4, 5], [6, 7, 8], ...]
-    new_faces = np.arange(face_count * 3).reshape(-1, 3)  # Shape: (face_count, 3)
+    new_faces = np.arange(face_count * 3).reshape(-1, 3)
     assert new_faces.shape == (
       face_count,
       3,
@@ -110,14 +98,11 @@ def mujoco_mesh_to_trimesh(
     # Create the mesh (process=False to preserve all vertices).
     mesh = trimesh.Trimesh(vertices=new_vertices, faces=new_faces, process=False)
 
-    # Now handle material and texture.
     matid = mj_model.geom_matid[geom_idx]
 
     if matid >= 0 and matid < mj_model.nmat:
-      # This geometry has a material.
-      rgba = mj_model.mat_rgba[matid]  # Shape: (4,)
-      # mat_texid is 2D (nmat x mjNTEXROLE), get the RGB/RGBA texture.
-      # Try RGB first (index 1), then RGBA (index 8).
+      rgba = mj_model.mat_rgba[matid]
+      # mat_texid is 2D (nmat x mjNTEXROLE), try RGB first, then RGBA.
       texid = int(mj_model.mat_texid[matid, int(mujoco.mjtTextureRole.mjTEXROLE_RGB)])
       if texid < 0:
         texid = int(
@@ -125,44 +110,31 @@ def mujoco_mesh_to_trimesh(
         )
 
       if texid >= 0 and texid < mj_model.ntex:
-        # This material has a texture.
         if verbose:
           print(f"Material has texture ID {texid}")
 
-        # Extract texture data.
         tex_width = mj_model.tex_width[texid]
         tex_height = mj_model.tex_height[texid]
         tex_nchannel = mj_model.tex_nchannel[texid]
         tex_adr = mj_model.tex_adr[texid]
-
-        # Calculate texture data size.
         tex_size = tex_width * tex_height * tex_nchannel
-
-        # Extract raw texture data.
         tex_data = mj_model.tex_data[tex_adr : tex_adr + tex_size]
         assert tex_data.shape == (tex_size,), (
           f"Expected tex_data shape ({tex_size},), got {tex_data.shape}"
         )
 
-        # Reshape texture data based on number of channels.
-        # Note: MuJoCo uses OpenGL convention (origin at bottom-left)
-        # but GLTF/GLB expects top-left origin, so we flip vertically.
+        # MuJoCo uses OpenGL convention (origin at bottom-left) but GLTF/GLB
+        # expects top-left origin, so we flip vertically.
         if tex_nchannel == 1:
-          # Grayscale.
           tex_array = tex_data.reshape(tex_height, tex_width)
-          # Flip vertically for GLTF convention.
           tex_array = np.flipud(tex_array)
           image = Image.fromarray(tex_array.astype(np.uint8), mode="L")
         elif tex_nchannel == 3:
-          # RGB.
           tex_array = tex_data.reshape(tex_height, tex_width, 3)
-          # Flip vertically for GLTF convention.
           tex_array = np.flipud(tex_array)
           image = Image.fromarray(tex_array.astype(np.uint8), mode="RGB")
         elif tex_nchannel == 4:
-          # RGBA.
           tex_array = tex_data.reshape(tex_height, tex_width, 4)
-          # Flip vertically for GLTF convention.
           tex_array = np.flipud(tex_array)
           image = Image.fromarray(tex_array.astype(np.uint8), mode="RGBA")
         else:
@@ -171,7 +143,6 @@ def mujoco_mesh_to_trimesh(
           image = None
 
         if image is not None:
-          # Create material with texture.
           # Set PBR properties for proper rendering:
           # - metallicFactor=0.0: non-metallic (dielectric) material
           # - roughnessFactor=1.0: fully rough (diffuse) surface
@@ -181,82 +152,60 @@ def mujoco_mesh_to_trimesh(
             metallicFactor=0.0,
             roughnessFactor=1.0,
           )
-
-          # Apply texture visual with UV coordinates.
           mesh.visual = trimesh.visual.TextureVisuals(uv=new_uvs, material=material)
           if verbose:
             print(f"Applied texture: {tex_width}x{tex_height}, {tex_nchannel} channels")
         else:
-          # Just use material color - convert from [0,1] to [0,255].
-          rgba_255 = (rgba * 255).astype(np.uint8)
           mesh.visual = trimesh.visual.ColorVisuals(
-            vertex_colors=np.tile(rgba_255, (len(new_vertices), 1))
+            vertex_colors=np.tile(rgba_to_uint8(rgba), (len(new_vertices), 1))
           )
       else:
-        # Material but no texture - use material color.
         if verbose:
           print(f"Material has no texture, using color: {rgba}")
-        rgba_255 = (rgba * 255).astype(np.uint8)
         mesh.visual = trimesh.visual.ColorVisuals(
-          vertex_colors=np.tile(rgba_255, (len(new_vertices), 1))
+          vertex_colors=np.tile(rgba_to_uint8(rgba), (len(new_vertices), 1))
         )
     else:
-      # No material - use default color based on collision/visual.
       is_collision = (
         mj_model.geom_contype[geom_idx] != 0 or mj_model.geom_conaffinity[geom_idx] != 0
       )
-      if is_collision:
-        color = np.array([204, 102, 102, 128], dtype=np.uint8)  # Red-ish for collision.
-      else:
-        color = np.array([31, 128, 230, 255], dtype=np.uint8)  # Blue-ish for visual.
+      color = _DEFAULT_COLLISION_COLOR if is_collision else _DEFAULT_VISUAL_COLOR
 
       mesh.visual = trimesh.visual.ColorVisuals(
         vertex_colors=np.tile(color, (len(new_vertices), 1))
       )
       if verbose:
         print(
-          f"No material, using default {'collision' if is_collision else 'visual'} "
-          "color"
+          f"No material, using default {'collision' if is_collision else 'visual'} color"
         )
 
   else:
-    # No texture coordinates - simpler case.
     if verbose:
       print("Mesh has no texture coordinates")
 
-    # Create mesh with original vertices and faces (process=False to avoid vertex removal).
     mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
 
-    # Apply material color if available.
     matid = mj_model.geom_matid[geom_idx]
 
     if matid >= 0 and matid < mj_model.nmat:
       rgba = mj_model.mat_rgba[matid]
-      rgba_255 = (rgba * 255).astype(np.uint8)
-      # Use actual vertex count after mesh creation.
       mesh.visual = trimesh.visual.ColorVisuals(
-        vertex_colors=np.tile(rgba_255, (len(mesh.vertices), 1))
+        vertex_colors=np.tile(rgba_to_uint8(rgba), (len(mesh.vertices), 1))
       )
       if verbose:
         print(f"Applied material color: {rgba}")
     else:
-      # Default color.
       is_collision = (
         mj_model.geom_contype[geom_idx] != 0 or mj_model.geom_conaffinity[geom_idx] != 0
       )
-      if is_collision:
-        color = np.array([204, 102, 102, 128], dtype=np.uint8)  # Red-ish for collision.
-      else:
-        color = np.array([31, 128, 230, 255], dtype=np.uint8)  # Blue-ish for visual.
+      color = _DEFAULT_COLLISION_COLOR if is_collision else _DEFAULT_VISUAL_COLOR
 
-      # Use actual vertex count after mesh creation.
       mesh.visual = trimesh.visual.ColorVisuals(
         vertex_colors=np.tile(color, (len(mesh.vertices), 1))
       )
       if verbose:
         print(f"Using default {'collision' if is_collision else 'visual'} color")
 
-  # Final sanity checks.
   assert mesh.vertices.shape[1] == 3, (
     f"Vertices should be Nx3, got {mesh.vertices.shape}"
   )
@@ -267,6 +216,61 @@ def mujoco_mesh_to_trimesh(
   if verbose:
     print(f"Created mesh: {len(mesh.vertices)} vertices, {len(mesh.faces)} faces")
 
+  return mesh
+
+
+def _create_hfield_mesh(mj_model: mujoco.MjModel, geom_id: int) -> trimesh.Trimesh:
+  """Create heightfield mesh from MuJoCo hfield data."""
+  hfield_id = mj_model.geom_dataid[geom_id]
+  nrow = mj_model.hfield_nrow[hfield_id]
+  ncol = mj_model.hfield_ncol[hfield_id]
+  sx, sy, sz, base = mj_model.hfield_size[hfield_id]
+
+  offset = 0
+  for k in range(hfield_id):
+    offset += mj_model.hfield_nrow[k] * mj_model.hfield_ncol[k]
+  hfield = mj_model.hfield_data[offset : offset + nrow * ncol].reshape(nrow, ncol)
+
+  x = np.linspace(-sx, sx, ncol)
+  y = np.linspace(-sy, sy, nrow)
+  xx, yy = np.meshgrid(x, y)
+  zz = base + sz * hfield
+
+  vertices = np.column_stack((xx.ravel(), yy.ravel(), zz.ravel()))
+
+  faces = []
+  for i in range(nrow - 1):
+    for j in range(ncol - 1):
+      i0 = i * ncol + j
+      i1 = i0 + 1
+      i2 = i0 + ncol
+      i3 = i2 + 1
+      faces.append([i0, i2, i1])
+      faces.append([i1, i2, i3])
+  faces = np.array(faces, dtype=np.int64)
+  return trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
+
+
+# Dispatch table for primitive shape creation.
+_SHAPE_CREATORS = {
+  mjtGeom.mjGEOM_SPHERE.value: lambda size: trimesh.creation.icosphere(
+    radius=size[0], subdivisions=2
+  ),
+  mjtGeom.mjGEOM_BOX.value: lambda size: trimesh.creation.box(extents=2.0 * size),
+  mjtGeom.mjGEOM_CAPSULE.value: lambda size: trimesh.creation.capsule(
+    radius=size[0], height=2.0 * size[1]
+  ),
+  mjtGeom.mjGEOM_CYLINDER.value: lambda size: trimesh.creation.cylinder(
+    radius=size[0], height=2.0 * size[1]
+  ),
+  mjtGeom.mjGEOM_PLANE.value: lambda size: trimesh.creation.box((20, 20, 0.01)),
+}
+
+
+def _create_ellipsoid_mesh(size: np.ndarray) -> trimesh.Trimesh:
+  """Create ellipsoid mesh by scaling a unit sphere."""
+  mesh = trimesh.creation.icosphere(subdivisions=3, radius=1.0)
+  mesh.apply_scale(size)
   return mesh
 
 
@@ -289,7 +293,6 @@ def _create_shape_mesh(
   Returns:
     Trimesh representation of the shape
   """
-  # Use BLEND alpha mode if the material has transparency.
   alpha_mode = "BLEND" if rgba[3] < 1.0 else "OPAQUE"
   material = trimesh.visual.material.PBRMaterial(  # type: ignore
     baseColorFactor=rgba,
@@ -298,50 +301,14 @@ def _create_shape_mesh(
     alphaMode=alpha_mode,
   )
 
-  if shape_type == mjtGeom.mjGEOM_SPHERE:
-    mesh = trimesh.creation.icosphere(radius=size[0], subdivisions=2)
-  elif shape_type == mjtGeom.mjGEOM_BOX:
-    mesh = trimesh.creation.box(extents=2.0 * size)
-  elif shape_type == mjtGeom.mjGEOM_CAPSULE:
-    mesh = trimesh.creation.capsule(radius=size[0], height=2.0 * size[1])
-  elif shape_type == mjtGeom.mjGEOM_CYLINDER:
-    mesh = trimesh.creation.cylinder(radius=size[0], height=2.0 * size[1])
-  elif shape_type == mjtGeom.mjGEOM_PLANE:
-    mesh = trimesh.creation.box((20, 20, 0.01))
+  if shape_type in _SHAPE_CREATORS:
+    mesh = _SHAPE_CREATORS[shape_type](size)
   elif shape_type == mjtGeom.mjGEOM_ELLIPSOID:
-    mesh = trimesh.creation.icosphere(subdivisions=3, radius=1.0)
-    mesh.apply_scale(size)
+    mesh = _create_ellipsoid_mesh(size)
   elif shape_type == mjtGeom.mjGEOM_HFIELD:
     if mj_model is None or geom_id is None:
       raise ValueError("mj_model and geom_id required for HFIELD type")
-    hfield_id = mj_model.geom_dataid[geom_id]
-    nrow = mj_model.hfield_nrow[hfield_id]
-    ncol = mj_model.hfield_ncol[hfield_id]
-    sx, sy, sz, base = mj_model.hfield_size[hfield_id]
-
-    offset = 0
-    for k in range(hfield_id):
-      offset += mj_model.hfield_nrow[k] * mj_model.hfield_ncol[k]
-    hfield = mj_model.hfield_data[offset : offset + nrow * ncol].reshape(nrow, ncol)
-
-    x = np.linspace(-sx, sx, ncol)
-    y = np.linspace(-sy, sy, nrow)
-    xx, yy = np.meshgrid(x, y)
-    zz = base + sz * hfield
-
-    vertices = np.column_stack((xx.ravel(), yy.ravel(), zz.ravel()))
-
-    faces = []
-    for i in range(nrow - 1):
-      for j in range(ncol - 1):
-        i0 = i * ncol + j
-        i1 = i0 + 1
-        i2 = i0 + ncol
-        i3 = i2 + 1
-        faces.append([i0, i2, i1])
-        faces.append([i1, i2, i3])
-    faces = np.array(faces, dtype=np.int64)
-    mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
+    mesh = _create_hfield_mesh(mj_model, geom_id)
   else:
     raise ValueError(f"Unsupported shape type: {shape_type}")
 

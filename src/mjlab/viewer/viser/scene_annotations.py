@@ -14,6 +14,8 @@ from mjlab.viewer.viser.conversions import get_body_name, is_fixed_body
 if TYPE_CHECKING:
   import mujoco
 
+_NUM_GEOM_GROUPS = 6
+
 
 class ViserSceneAnnotationsMixin:
   """Mixin providing annotation management for ViserMujocoScene.
@@ -45,11 +47,10 @@ class ViserSceneAnnotationsMixin:
     """Recreate all annotations based on current label_targets and frame_targets."""
     self._clear_annotations()
 
-    # Create site labels.
     if "sites" in self.label_targets:
       for site_id in range(self.mj_model.nsite):
         site_group = self.mj_model.site_group[site_id]
-        if site_group >= 6 or not self.site_groups_visible[site_group]:
+        if site_group >= _NUM_GEOM_GROUPS or not self.site_groups_visible[site_group]:
           continue
         site_name = mj_id2name(self.mj_model, mjtObj.mjOBJ_SITE, site_id)
         if not site_name:
@@ -62,7 +63,6 @@ class ViserSceneAnnotationsMixin:
         )
         self._label_handles[f"site_{site_id}"] = label
 
-    # Create body labels.
     if "bodies" in self.label_targets:
       for body_id in range(self.mj_model.nbody):
         if is_fixed_body(self.mj_model, body_id):
@@ -76,11 +76,9 @@ class ViserSceneAnnotationsMixin:
         )
         self._label_handles[f"body_{body_id}"] = label
 
-    # Create site frames.
     if "sites" in self.frame_targets:
       self._create_frame_handles("sites")
 
-    # Create body frames.
     if "bodies" in self.frame_targets:
       self._create_frame_handles("bodies")
 
@@ -90,11 +88,10 @@ class ViserSceneAnnotationsMixin:
     frame_length = self.mj_model.vis.scale.framelength * meansize * self.frame_scale
     frame_width = self.mj_model.vis.scale.framewidth * meansize * self.frame_scale
 
-    # Create frames for each site/body.
     if target == "sites":
       for site_id in range(self.mj_model.nsite):
         site_group = self.mj_model.site_group[site_id]
-        if site_group >= 6 or not self.site_groups_visible[site_group]:
+        if site_group >= _NUM_GEOM_GROUPS or not self.site_groups_visible[site_group]:
           continue
         key = f"site_frame_{site_id}"
         handle = self.server.scene.add_frame(
@@ -104,7 +101,7 @@ class ViserSceneAnnotationsMixin:
         )
         self._frame_handles[key] = handle
 
-    else:  # bodies
+    else:
       for body_id in range(self.mj_model.nbody):
         if is_fixed_body(self.mj_model, body_id):
           continue
@@ -128,17 +125,14 @@ class ViserSceneAnnotationsMixin:
     if not self.label_targets and not self.frame_targets:
       return
 
-    # Update site labels.
     if "sites" in self.label_targets and mj_data is not None:
       for site_id in range(self.mj_model.nsite):
         key = f"site_{site_id}"
         if key not in self._label_handles:
           continue
-        # Use precomputed site position from mj_data (much simpler!).
         site_world_pos = mj_data.site(site_id).xpos
         self._label_handles[key].position = site_world_pos + scene_offset
 
-    # Update body labels.
     if "bodies" in self.label_targets:
       for body_id in range(self.mj_model.nbody):
         key = f"body_{body_id}"
@@ -147,13 +141,11 @@ class ViserSceneAnnotationsMixin:
         body_pos = body_xpos[env_idx, body_id, :] + scene_offset
         self._label_handles[key].position = body_pos
 
-    # Update site frames.
     if "sites" in self.frame_targets:
       self._update_frame_positions(
         "sites", body_xpos, body_xmat, env_idx, scene_offset, mj_data
       )
 
-    # Update body frames.
     if "bodies" in self.frame_targets:
       self._update_frame_positions(
         "bodies", body_xpos, body_xmat, env_idx, scene_offset, mj_data
@@ -177,7 +169,6 @@ class ViserSceneAnnotationsMixin:
         if key not in self._frame_handles:
           continue
 
-        # Use precomputed site pose from mj_data (much simpler!).
         site_world_pos = mj_data.site(site_id).xpos + scene_offset
         site_world_mat = mj_data.site(site_id).xmat.reshape(3, 3)
         site_world_quat = vtf.SO3.from_matrix(site_world_mat).wxyz
@@ -186,7 +177,7 @@ class ViserSceneAnnotationsMixin:
         handle.position = site_world_pos
         handle.wxyz = site_world_quat
 
-    elif target == "bodies":  # bodies
+    elif target == "bodies":
       for body_id in range(self.mj_model.nbody):
         key = f"body_frame_{body_id}"
         if key not in self._frame_handles:

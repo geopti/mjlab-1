@@ -16,11 +16,16 @@ from mjlab.viewer.viser.conversions import (
   create_primitive_mesh,
   get_body_name,
   mujoco_mesh_to_trimesh,
+  rgba_to_uint8,
   rotation_quat_from_vectors,
 )
 
 if TYPE_CHECKING:
   pass
+
+# Arrow rendering constants.
+_ARROW_SHAFT_LENGTH_RATIO = 0.8
+_ARROW_HEAD_LENGTH_RATIO = 0.2
 
 
 class ViserSceneDebugMixin:
@@ -57,7 +62,7 @@ class ViserSceneDebugMixin:
     if not self.debug_visualization_enabled:
       return
 
-    del label  # Unused.
+    del label
     if isinstance(start, torch.Tensor):
       start = start.cpu().numpy()
     if isinstance(end, torch.Tensor):
@@ -69,7 +74,6 @@ class ViserSceneDebugMixin:
     if length < 1e-6:
       return
 
-    # Queue the arrow for batched rendering (without scene offset - applied during sync)
     self._queued_arrows.append((start, end, color, width))
 
   def add_ghost_mesh(
@@ -95,16 +99,13 @@ class ViserSceneDebugMixin:
     if isinstance(qpos, torch.Tensor):
       qpos = qpos.cpu().numpy()
 
-    # Use model hash to support models with same structure but different colors
     model_hash = hash((model.ngeom, model.nbody, model.nq))
 
     self._viz_data.qpos[:] = qpos
     mujoco.mj_forward(model, self._viz_data)
 
-    # Use current scene offset
     scene_offset = self._scene_offset
 
-    # Group geoms by body
     body_geoms: dict[int, list[int]] = {}
     for i in range(model.ngeom):
       body_id = model.geom_bodyid[i]
@@ -119,18 +120,15 @@ class ViserSceneDebugMixin:
         body_geoms[body_id] = []
       body_geoms[body_id].append(i)
 
-    # Update or create mesh for each body
     for body_id, geom_indices in body_geoms.items():
       body_pos = self._viz_data.xpos[body_id] + scene_offset
       body_quat = self._mat_to_quat(self._viz_data.xmat[body_id].reshape(3, 3))
 
-      # Check if we already have a handle for this body
       if body_id in self._ghost_handles:
         handle = self._ghost_handles[body_id]
         handle.wxyz = body_quat
         handle.position = body_pos
       else:
-        # Create mesh if not cached
         if model_hash not in self._ghost_meshes:
           self._ghost_meshes[model_hash] = {}
 
@@ -161,9 +159,8 @@ class ViserSceneDebugMixin:
         body_name = get_body_name(model, body_id)
         handle_name = f"/debug/env_{self.env_idx}/ghost/body_{body_name}"
 
-        # Extract color from geom (convert RGBA 0-1 to RGB 0-255)
         rgba = model.geom_rgba[geom_indices[0]].copy()
-        color_uint8 = (rgba[:3] * 255).astype(np.uint8)
+        color_uint8 = rgba_to_uint8(rgba[:3])
 
         handle = self.server.scene.add_mesh_simple(
           handle_name,
@@ -207,7 +204,7 @@ class ViserSceneDebugMixin:
     if not self.debug_visualization_enabled:
       return
 
-    del label  # Unused.
+    del label
 
     if isinstance(position, torch.Tensor):
       position = position.cpu().numpy()
@@ -286,7 +283,6 @@ class ViserSceneDebugMixin:
       return
 
     if not self._queued_arrows:
-      # Remove arrow meshes if no arrows to render
       if self._arrow_shaft_handle is not None:
         self._arrow_shaft_handle.remove()
         self._arrow_shaft_handle = None
@@ -295,19 +291,14 @@ class ViserSceneDebugMixin:
         self._arrow_head_handle = None
       return
 
-    # Create arrow mesh components if needed (unit-sized base meshes)
     if self._arrow_shaft_mesh is None:
-      # Unit cylinder: radius=1.0, height=1.0
       self._arrow_shaft_mesh = trimesh.creation.cylinder(radius=1.0, height=1.0)
-      self._arrow_shaft_mesh.apply_translation(np.array([0, 0, 0.5]))  # Center at z=0.5
+      self._arrow_shaft_mesh.apply_translation(np.array([0, 0, 0.5]))
 
     if self._arrow_head_mesh is None:
-      # Unit cone: radius=2.0, height=1.0 (base at z=0, tip at z=1.0 by default)
       head_width = 2.0
       self._arrow_head_mesh = trimesh.creation.cone(radius=head_width, height=1.0)
-      # No translation needed - cone already has base at z=0
 
-    # Prepare batched data
     num_arrows = len(self._queued_arrows)
     shaft_positions = np.zeros((num_arrows, 3), dtype=np.float32)
     shaft_wxyzs = np.zeros((num_arrows, 4), dtype=np.float32)
@@ -320,12 +311,8 @@ class ViserSceneDebugMixin:
     head_colors = np.zeros((num_arrows, 3), dtype=np.uint8)
 
     z_axis = np.array([0, 0, 1])
-    shaft_length_ratio = 0.8
-    head_length_ratio = 0.2
 
-    # Apply scene offset to all arrows
     for i, (start, end, color, width) in enumerate(self._queued_arrows):
-      # Apply scene offset
       start_offset = start + self._scene_offset
       end_offset = end + self._scene_offset
 
@@ -335,25 +322,19 @@ class ViserSceneDebugMixin:
 
       rotation_quat = rotation_quat_from_vectors(z_axis, direction)
 
-      # Shaft: scale width in XY, length in Z
-      shaft_length = shaft_length_ratio * length
+      shaft_length = _ARROW_SHAFT_LENGTH_RATIO * length
       shaft_positions[i] = start_offset
       shaft_wxyzs[i] = rotation_quat
-      shaft_scales[i] = [width, width, shaft_length]  # Per-axis scale
-      shaft_colors[i] = (np.array(color[:3]) * 255).astype(np.uint8)
+      shaft_scales[i] = [width, width, shaft_length]
+      shaft_colors[i] = rgba_to_uint8(np.array(color[:3]))
 
-      # Head: position at end of shaft
-      # The cone has its base at z=0, so after scaling by head_length,
-      # the base is still at z=0 in local coords
-      # We want the base at the end of the shaft (at shaft_length)
-      head_length = head_length_ratio * length
+      head_length = _ARROW_HEAD_LENGTH_RATIO * length
       head_position = start_offset + direction * shaft_length
       head_positions[i] = head_position
       head_wxyzs[i] = rotation_quat
-      head_scales[i] = [width, width, head_length]  # Per-axis scale
-      head_colors[i] = (np.array(color[:3]) * 255).astype(np.uint8)
+      head_scales[i] = [width, width, head_length]
+      head_colors[i] = rgba_to_uint8(np.array(color[:3]))
 
-    # Check if we need to recreate handles (number of arrows changed)
     needs_recreation = (
       self._arrow_shaft_handle is None
       or self._arrow_head_handle is None

@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 _DEFAULT_FOV_DEGREES = 60
 _DEFAULT_FOV_MIN = 20
 _DEFAULT_FOV_MAX = 150
+_NUM_GEOM_GROUPS = 6
 
 
 class ViserSceneGuiMixin:
@@ -167,7 +168,7 @@ class ViserSceneGuiMixin:
     """
     with tabs.add_tab("Groups", icon=viser.Icon.EYE):
       self.server.gui.add_markdown("**Geoms**")
-      for i in range(6):
+      for i in range(_NUM_GEOM_GROUPS):
         cb = self.server.gui.add_checkbox(
           f"G{i}",
           initial_value=self.geom_groups_visible[i],
@@ -181,7 +182,7 @@ class ViserSceneGuiMixin:
           cast("ViserSceneProtocol", self)._request_update()
 
       self.server.gui.add_markdown("**Sites**")
-      for i in range(6):
+      for i in range(_NUM_GEOM_GROUPS):
         cb = self.server.gui.add_checkbox(
           f"S{i}",
           initial_value=self.site_groups_visible[i],

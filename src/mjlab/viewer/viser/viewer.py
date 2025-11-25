@@ -40,7 +40,6 @@ class ViserPlayViewer(BaseViewer):
     self._counter = 0
     self._needs_update = False
 
-    # Create ViserMujocoScene for all 3D visualization.
     self._scene = ViserMujocoScene.create(
       server=self._server,
       mj_model=sim.mj_model,
@@ -48,25 +47,17 @@ class ViserPlayViewer(BaseViewer):
     )
 
     self._scene.env_idx = self.cfg.env_idx
-    self._scene.debug_visualization_enabled = (
-      True  # Enable debug visualization by default.
-    )
+    self._scene.debug_visualization_enabled = True
 
-    # Environment selector at top level (always visible across all tabs).
     self._scene.create_env_selector_gui()
 
-    # Create tab group.
     tabs = self._server.gui.add_tab_group()
 
-    # Main tab with simulation controls and display settings.
     with tabs.add_tab("Controls", icon=viser.Icon.SETTINGS):
-      # Status display.
       with self._server.gui.add_folder("Info"):
         self._status_html = self._server.gui.add_html("")
 
-      # Simulation controls.
       with self._server.gui.add_folder("Simulation"):
-        # Play/Pause button.
         self._pause_button = self._server.gui.add_button(
           "Play" if self._is_paused else "Pause",
           icon=viser.Icon.PLAYER_PLAY if self._is_paused else viser.Icon.PLAYER_PAUSE,
@@ -82,7 +73,6 @@ class ViserPlayViewer(BaseViewer):
           self._update_status_display()
           self._needs_update = True
 
-        # Reset button.
         reset_button = self._server.gui.add_button("Reset Environment")
 
         @reset_button.on_click
@@ -91,7 +81,6 @@ class ViserPlayViewer(BaseViewer):
           self._update_status_display()
           self._needs_update = True
 
-        # Speed controls.
         speed_buttons = self._server.gui.add_button_group(
           "Speed",
           options=["Slower", "Faster"],
@@ -113,10 +102,8 @@ class ViserPlayViewer(BaseViewer):
 
     self._prev_env_idx = self._scene.env_idx
 
-    # Reward plots tab.
     if hasattr(self.env.unwrapped, "reward_manager"):
       with tabs.add_tab("Rewards", icon=viser.Icon.CHART_LINE):
-        # Get reward term names and create reward plotter.
         term_names = [
           name
           for name, _ in self.env.unwrapped.reward_manager.get_active_iterable_terms(
@@ -125,10 +112,7 @@ class ViserPlayViewer(BaseViewer):
         ]
         self._reward_plotter = ViserRewardPlotter(self._server, term_names)
 
-    # Groups tab (geom and site visibility).
     self._scene.create_groups_gui(tabs)
-
-    # Overlays tab (annotations and contacts).
     self._scene.create_overlays_gui(tabs)
 
   @override
@@ -143,7 +127,6 @@ class ViserPlayViewer(BaseViewer):
         self._prev_env_idx = self._scene.env_idx
         if self._reward_plotter:
           self._reward_plotter.clear_histories()
-        # Clear debug visualizations when switching environments
         if self._scene.debug_visualization_enabled:
           self._scene.clear_debug_all()
 
@@ -155,11 +138,10 @@ class ViserPlayViewer(BaseViewer):
         )
         self._reward_plotter.update(terms)
 
-    # Update debug visualizations if enabled
     if self._scene.debug_visualization_enabled and hasattr(
       self.env.unwrapped, "update_visualizers"
     ):
-      self._scene.clear()  # Clear queued arrows from previous frame
+      self._scene.clear()
       self.env.unwrapped.update_visualizers(self._scene)
 
     if self._counter % 2 != 0:

@@ -24,16 +24,11 @@ from mjlab.viewer.viser.scene_contacts import ViserSceneContactsMixin, _Contact
 from mjlab.viewer.viser.scene_debug import ViserSceneDebugMixin
 from mjlab.viewer.viser.scene_gui import ViserSceneGuiMixin
 
-try:
-  import mujoco_warp as mjwarp
-except ImportError:
-  mjwarp = None  # type: ignore
-
-
 # Viser visualization defaults.
 _DEFAULT_ENVIRONMENT_INTENSITY = 0.8
 _DEFAULT_CONTACT_POINT_COLOR = (230, 153, 51)
 _DEFAULT_CONTACT_FORCE_COLOR = (255, 0, 0)
+_NUM_GEOM_GROUPS = 6
 
 
 @dataclass
@@ -50,13 +45,11 @@ class ViserMujocoScene(
   like arrows, ghost meshes, and coordinate frames.
   """
 
-  # Core.
   server: viser.ViserServer
   mj_model: mujoco.MjModel
   mj_data: mujoco.MjData
   num_envs: int
 
-  # Handles (created once).
   fixed_bodies_frame: viser.SceneNodeHandle = field(init=False)
   mesh_handles_by_group: dict[tuple[int, int], viser.BatchedGlbHandle] = field(
     default_factory=dict
@@ -71,12 +64,10 @@ class ViserMujocoScene(
   contact_force_shaft_handle: viser.BatchedMeshHandle | None = None
   contact_force_head_handle: viser.BatchedMeshHandle | None = None
 
-  # Annotation handles (labels and frames for sites/bodies).
   _label_handles: dict[str, viser.LabelHandle] = field(default_factory=dict, init=False)
   _frame_handles: dict[str, viser.FrameHandle] = field(default_factory=dict, init=False)
 
-  # Visualization settings (set directly or automatically updated by create_options_gui).
-  env_idx: int = 0  # Current environment index (DebugVisualizer protocol).
+  env_idx: int = 0
   camera_tracking_enabled: bool = False
   show_only_selected: bool = False
   geom_groups_visible: list[bool] = field(
@@ -85,10 +76,9 @@ class ViserMujocoScene(
   site_groups_visible: list[bool] = field(
     default_factory=lambda: [True, True, True, False, False, False]
   )
-  # Annotation targets: which object types to show labels/frames for.
-  label_targets: set[str] = field(default_factory=set)  # "sites", "bodies"
-  frame_targets: set[str] = field(default_factory=set)  # "sites", "bodies"
-  frame_scale: float = 1.0  # Multiplier for coordinate frame size
+  label_targets: set[str] = field(default_factory=set)
+  frame_targets: set[str] = field(default_factory=set)
+  frame_scale: float = 1.0
   show_contact_points: bool = False
   show_contact_forces: bool = False
   contact_point_color: tuple[int, int, int] = _DEFAULT_CONTACT_POINT_COLOR
@@ -97,7 +87,6 @@ class ViserMujocoScene(
   needs_update: bool = False
   _tracked_body_id: int | None = field(init=False, default=None)
 
-  # Cached visualization state for re-rendering when settings change.
   _last_body_xpos: np.ndarray | None = None
   _last_body_xmat: np.ndarray | None = None
   _last_mocap_pos: np.ndarray | None = None
@@ -105,7 +94,6 @@ class ViserMujocoScene(
   _last_env_idx: int = 0
   _last_contacts: list[_Contact] | None = None
 
-  # Debug visualization (arrows, ghosts, frames).
   debug_visualization_enabled: bool = False
   _scene_offset: np.ndarray = field(default_factory=lambda: np.zeros(3), init=False)
   _queued_arrows: list[
@@ -151,24 +139,15 @@ class ViserMujocoScene(
       num_envs=num_envs,
     )
 
-    # Initialize debug visualization data.
     scene._viz_data = mujoco.MjData(mj_model)
 
-    # Configure environment lighting.
     server.scene.configure_environment_map(
       environment_intensity=_DEFAULT_ENVIRONMENT_INTENSITY
     )
 
-    # Create frame for fixed world geometry.
     scene.fixed_bodies_frame = server.scene.add_frame("/fixed_bodies", show_axes=False)
-
-    # Add fixed geometry (planes, terrain, etc.).
     scene._add_fixed_geometry()
-
-    # Create mesh handles per geom group.
     scene._create_mesh_handles_by_group()
-
-    # Create site handles per site group.
     scene._create_site_handles_by_group()
 
     # Find first non-fixed body for camera tracking.
@@ -188,23 +167,24 @@ class ViserMujocoScene(
 
   def _sync_visibilities(self) -> None:
     """Synchronize all handle visibilities based on current flags."""
-    # Geom group meshes.
     for (_body_id, group_id), handle in self.mesh_handles_by_group.items():
-      handle.visible = group_id < 6 and self.geom_groups_visible[group_id]
+      handle.visible = (
+        group_id < _NUM_GEOM_GROUPS and self.geom_groups_visible[group_id]
+      )
 
-    # Site group meshes (fixed bodies).
     for (_body_id, group_id), handle in self.fixed_site_handles.items():
-      handle.visible = group_id < 6 and self.site_groups_visible[group_id]
+      handle.visible = (
+        group_id < _NUM_GEOM_GROUPS and self.site_groups_visible[group_id]
+      )
 
-    # Site group meshes (non-fixed bodies).
     for (_body_id, group_id), handle in self.site_handles_by_group.items():
-      handle.visible = group_id < 6 and self.site_groups_visible[group_id]
+      handle.visible = (
+        group_id < _NUM_GEOM_GROUPS and self.site_groups_visible[group_id]
+      )
 
-    # Contact points.
     if self.contact_point_handle is not None and not self.show_contact_points:
       self.contact_point_handle.visible = False
 
-    # Contact forces.
     if not self.show_contact_forces:
       if self.contact_force_shaft_handle is not None:
         self.contact_force_shaft_handle.visible = False
@@ -232,7 +212,6 @@ class ViserMujocoScene(
 
     contacts = None
     mj_data = None
-    # Compute forward kinematics if we need contacts or annotations.
     if (
       self.show_contact_points
       or self.show_contact_forces
@@ -281,8 +260,6 @@ class ViserMujocoScene(
       scene_offset = -tracked_pos
 
     # Always extract contacts for single-environment updates (used by nan_viz).
-    # This allows toggling contact visualization without needing to scrub timesteps.
-    # Not performance-critical since this isn't called in tight loops.
     contacts = self._extract_contacts_from_mjdata(mj_data)
 
     self._update_visualization(
@@ -296,7 +273,6 @@ class ViserMujocoScene(
       mj_data,
     )
 
-    # Update scene offset for debug visualizations and sync arrows
     if self.debug_visualization_enabled:
       self._scene_offset = scene_offset
       self._sync_arrows()
@@ -313,14 +289,12 @@ class ViserMujocoScene(
     mj_data: mujoco.MjData | None,
   ) -> None:
     """Shared visualization update logic."""
-    # Cache visualization state for re-rendering when settings change.
     self._last_body_xpos = body_xpos
     self._last_body_xmat = body_xmat
     self._last_mocap_pos = mocap_pos
     self._last_mocap_quat = mocap_quat
     self._last_env_idx = env_idx
     self._scene_offset = scene_offset
-    # Only update cached contacts if we have new contact data (don't overwrite with None)
     if contacts is not None:
       self._last_contacts = contacts
 
@@ -330,11 +304,8 @@ class ViserMujocoScene(
       for (body_id, _group_id), handle in self.mesh_handles_by_group.items():
         if not handle.visible:
           continue
-        # Check if this is a mocap body.
         mocap_id = self.mj_model.body_mocapid[body_id]
         if mocap_id >= 0:
-          # Use mocap pos/quat for mocap bodies.
-          # Note: mocap_quat is already in wxyz format (MuJoCo convention).
           if self.show_only_selected and self.num_envs > 1:
             single_pos = mocap_pos[env_idx, mocap_id, :] + scene_offset
             single_quat = mocap_quat[env_idx, mocap_id, :]
@@ -344,7 +315,6 @@ class ViserMujocoScene(
             handle.batched_positions = mocap_pos[:, mocap_id, :] + scene_offset
             handle.batched_wxyzs = mocap_quat[:, mocap_id, :]
         else:
-          # Use xpos/xmat for regular bodies.
           if self.show_only_selected and self.num_envs > 1:
             single_pos = body_xpos[env_idx, body_id, :] + scene_offset
             single_quat = body_xquat[env_idx, body_id, :]
@@ -354,11 +324,9 @@ class ViserMujocoScene(
             handle.batched_positions = body_xpos[..., body_id, :] + scene_offset
             handle.batched_wxyzs = body_xquat[..., body_id, :]
 
-      # Update site positions (non-fixed bodies only).
       for (body_id, _group_id), handle in self.site_handles_by_group.items():
         if not handle.visible:
           continue
-        # Sites follow their parent body's pose.
         mocap_id = self.mj_model.body_mocapid[body_id]
         if mocap_id >= 0:
           if self.show_only_selected and self.num_envs > 1:
@@ -382,7 +350,6 @@ class ViserMujocoScene(
       if contacts is not None:
         self._update_contact_visualization(contacts, scene_offset)
 
-      # Update annotation positions (labels and frames).
       self._update_annotations(body_xpos, body_xmat, env_idx, scene_offset, mj_data)
 
       self.server.flush()
@@ -409,17 +376,14 @@ class ViserMujocoScene(
       or self._last_mocap_pos is None
       or self._last_mocap_quat is None
     ):
-      return  # No cached data yet
+      return
 
-    # Use cached contacts (don't recompute - the data might be stale).
-    # The next regular update will refresh contacts if needed.
     contacts = (
       self._last_contacts
       if (self.show_contact_points or self.show_contact_forces)
       else None
     )
 
-    # Recalculate scene offset based on current camera tracking state.
     scene_offset = np.zeros(3)
     if self.camera_tracking_enabled and self._tracked_body_id is not None:
       tracked_pos = self._last_body_xpos[
@@ -427,8 +391,6 @@ class ViserMujocoScene(
       ].copy()
       scene_offset = -tracked_pos
 
-    # Re-render with cached data (_update_visualization has its own atomic block and flush)
-    # Note: mj_data is None here - annotations won't update until next regular update.
     self._update_visualization(
       self._last_body_xpos,
       self._last_body_xmat,
@@ -437,7 +399,7 @@ class ViserMujocoScene(
       self._last_env_idx,
       scene_offset,
       contacts,
-      None,  # mj_data not available during refresh
+      None,
     )
     self.needs_update = False
 
@@ -451,14 +413,11 @@ class ViserMujocoScene(
       target = body_geoms_collision if self._is_collision_geom(i) else body_geoms_visual
       target.setdefault(body_id, []).append(i)
 
-    # Process all bodies with geoms.
     all_bodies = set(body_geoms_visual.keys()) | set(body_geoms_collision.keys())
 
     for body_id in all_bodies:
-      # Get body name.
       body_name = get_body_name(self.mj_model, body_id)
 
-      # Fixed world geometry. We'll assume this is shared between all environments.
       if is_fixed_body(self.mj_model, body_id):
         # Create both visual and collision geoms for fixed bodies (terrain, floor, etc.)
         # but show them all since they're static.
@@ -471,11 +430,9 @@ class ViserMujocoScene(
         if not all_geoms:
           continue
 
-        # Iterate over geoms.
         nonplane_geom_ids: list[int] = []
         for geom_id in all_geoms:
           geom_type = self.mj_model.geom_type[geom_id]
-          # Add plane geoms as infinite grids.
           if geom_type == mjtGeom.mjGEOM_PLANE:
             geom_name = mj_id2name(self.mj_model, mjtObj.mjOBJ_GEOM, geom_id)
             self.server.scene.add_grid(
@@ -496,7 +453,6 @@ class ViserMujocoScene(
           else:
             nonplane_geom_ids.append(geom_id)
 
-        # Handle non-plane geoms.
         if len(nonplane_geom_ids) > 0:
           self.server.scene.add_mesh_trimesh(
             f"/fixed_bodies/{body_name}",
@@ -508,7 +464,6 @@ class ViserMujocoScene(
             visible=True,
           )
 
-    # Add sites attached to fixed world bodies, grouped by site_group.
     body_group_sites: dict[tuple[int, int], list[int]] = {}
     for i in range(self.mj_model.nsite):
       body_id = self.mj_model.site_bodyid[i]
@@ -519,7 +474,7 @@ class ViserMujocoScene(
 
     for (body_id, group_id), site_ids in body_group_sites.items():
       body_name = get_body_name(self.mj_model, body_id)
-      visible = group_id < 6 and self.site_groups_visible[group_id]
+      visible = group_id < _NUM_GEOM_GROUPS and self.site_groups_visible[group_id]
       handle = self.server.scene.add_mesh_trimesh(
         f"/fixed_bodies/{body_name}/sites_group{group_id}",
         merge_sites(self.mj_model, site_ids),
@@ -533,13 +488,11 @@ class ViserMujocoScene(
 
   def _create_mesh_handles_by_group(self) -> None:
     """Create mesh handles for each geom group separately to allow independent toggling."""
-    # Group geoms by (body_id, group_id).
     body_group_geoms: dict[tuple[int, int], list[int]] = {}
 
     for i in range(self.mj_model.ngeom):
       body_id = self.mj_model.geom_bodyid[i]
 
-      # Skip fixed world geometry.
       if is_fixed_body(self.mj_model, body_id):
         continue
 
@@ -550,20 +503,15 @@ class ViserMujocoScene(
         body_group_geoms[key] = []
       body_group_geoms[key].append(i)
 
-    # Create handles for each (body, group) combination.
     with self.server.atomic():
       for (body_id, group_id), geom_indices in body_group_geoms.items():
-        # Get body name.
         body_name = get_body_name(self.mj_model, body_id)
 
-        # Merge geoms into a single mesh.
         mesh = merge_geoms(self.mj_model, geom_indices)
         lod_ratio = 1000.0 / mesh.vertices.shape[0]
 
-        # Check if this group should be visible.
-        visible = group_id < 6 and self.geom_groups_visible[group_id]
+        visible = group_id < _NUM_GEOM_GROUPS and self.geom_groups_visible[group_id]
 
-        # Create handle.
         handle = self.server.scene.add_batched_meshes_trimesh(
           f"/bodies/{body_name}/group{group_id}",
           mesh,
@@ -580,13 +528,11 @@ class ViserMujocoScene(
 
   def _create_site_handles_by_group(self) -> None:
     """Create site handles for each site group on non-fixed bodies."""
-    # Group sites by (body_id, group_id).
     body_group_sites: dict[tuple[int, int], list[int]] = {}
 
     for i in range(self.mj_model.nsite):
       body_id = self.mj_model.site_bodyid[i]
 
-      # Skip fixed world sites (handled in _add_fixed_geometry).
       if is_fixed_body(self.mj_model, body_id):
         continue
 
@@ -594,19 +540,15 @@ class ViserMujocoScene(
       key = (body_id, site_group)
       body_group_sites.setdefault(key, []).append(i)
 
-    # Create handles for each (body, group) combination.
     with self.server.atomic():
       for (body_id, group_id), site_indices in body_group_sites.items():
         body_name = get_body_name(self.mj_model, body_id)
 
-        # Merge sites into a single mesh.
         mesh = merge_sites(self.mj_model, site_indices)
         lod_ratio = 1000.0 / mesh.vertices.shape[0]
 
-        # Check if this group should be visible.
-        visible = group_id < 6 and self.site_groups_visible[group_id]
+        visible = group_id < _NUM_GEOM_GROUPS and self.site_groups_visible[group_id]
 
-        # Create batched handle.
         handle = self.server.scene.add_batched_meshes_trimesh(
           f"/bodies/{body_name}/sites_group{group_id}",
           mesh,

@@ -141,9 +141,14 @@ class ViserSceneContactsMixin:
 
     # Update or create contact point handle.
     if contact_points:
-      positions = np.array([p.position for p in contact_points], dtype=np.float32)
-      orientations = np.array([p.orientation for p in contact_points], dtype=np.float32)
-      scales = np.array([p.scale for p in contact_points], dtype=np.float32)
+      n_points = len(contact_points)
+      positions = np.empty((n_points, 3), dtype=np.float32)
+      orientations = np.empty((n_points, 4), dtype=np.float32)
+      scales = np.empty((n_points, 3), dtype=np.float32)
+      for i, p in enumerate(contact_points):
+        positions[i] = p.position
+        orientations[i] = p.orientation
+        scales[i] = p.scale
       if self.contact_point_handle is None:
         mesh = trimesh.creation.cylinder(radius=1.0, height=1.0)
         self.contact_point_handle = self.server.scene.add_batched_meshes_simple(
@@ -168,20 +173,20 @@ class ViserSceneContactsMixin:
 
     # Update or create contact force handles (shaft and head separately).
     if contact_forces:
-      shaft_positions = np.array(
-        [f.shaft_position for f in contact_forces], dtype=np.float32
-      )
-      shaft_orientations = np.array(
-        [f.shaft_orientation for f in contact_forces], dtype=np.float32
-      )
-      shaft_scales = np.array([f.shaft_scale for f in contact_forces], dtype=np.float32)
-      head_positions = np.array(
-        [f.head_position for f in contact_forces], dtype=np.float32
-      )
-      head_orientations = np.array(
-        [f.head_orientation for f in contact_forces], dtype=np.float32
-      )
-      head_scales = np.array([f.head_scale for f in contact_forces], dtype=np.float32)
+      n_forces = len(contact_forces)
+      shaft_positions = np.empty((n_forces, 3), dtype=np.float32)
+      shaft_orientations = np.empty((n_forces, 4), dtype=np.float32)
+      shaft_scales = np.empty((n_forces, 3), dtype=np.float32)
+      head_positions = np.empty((n_forces, 3), dtype=np.float32)
+      head_orientations = np.empty((n_forces, 4), dtype=np.float32)
+      head_scales = np.empty((n_forces, 3), dtype=np.float32)
+      for i, f in enumerate(contact_forces):
+        shaft_positions[i] = f.shaft_position
+        shaft_orientations[i] = f.shaft_orientation
+        shaft_scales[i] = f.shaft_scale
+        head_positions[i] = f.head_position
+        head_orientations[i] = f.head_orientation
+        head_scales[i] = f.head_scale
       if self.contact_force_shaft_handle is None:
         shaft_mesh = trimesh.creation.cylinder(radius=0.4, height=1.0)
         shaft_mesh.apply_translation([0, 0, 0.5])
