@@ -268,47 +268,55 @@ def mujoco_mesh_to_trimesh(
   return mesh
 
 
-def create_primitive_mesh(mj_model: mujoco.MjModel, geom_id: int) -> trimesh.Trimesh:
-  """Create a mesh for primitive geom types (sphere, box, capsule, cylinder, plane).
+def _create_shape_mesh(
+  shape_type: int,
+  size: np.ndarray,
+  rgba: np.ndarray,
+  mj_model: mujoco.MjModel | None = None,
+  geom_id: int | None = None,
+) -> trimesh.Trimesh:
+  """Create a mesh for a primitive shape type.
 
   Args:
-    mj_model: MuJoCo model containing geom definition
-    geom_id: Index of the geom to create mesh for
+    shape_type: MuJoCo geom type (mjtGeom enum value)
+    size: Shape size array (interpretation depends on shape_type)
+    rgba: RGBA color array (0-1 range)
+    mj_model: MuJoCo model (required for HFIELD type)
+    geom_id: Geom index (required for HFIELD type)
 
   Returns:
-    Trimesh representation of the primitive geom
+    Trimesh representation of the shape
   """
-  size = mj_model.geom_size[geom_id]
-  geom_type = mj_model.geom_type[geom_id]
-  rgba = mj_model.geom_rgba[geom_id].copy()
-
+  # Use BLEND alpha mode if the material has transparency.
+  alpha_mode = "BLEND" if rgba[3] < 1.0 else "OPAQUE"
   material = trimesh.visual.material.PBRMaterial(  # type: ignore
     baseColorFactor=rgba,
     metallicFactor=0.0,
     roughnessFactor=1.0,
+    alphaMode=alpha_mode,
   )
 
-  if geom_type == mjtGeom.mjGEOM_SPHERE:
+  if shape_type == mjtGeom.mjGEOM_SPHERE:
     mesh = trimesh.creation.icosphere(radius=size[0], subdivisions=2)
-  elif geom_type == mjtGeom.mjGEOM_BOX:
+  elif shape_type == mjtGeom.mjGEOM_BOX:
     mesh = trimesh.creation.box(extents=2.0 * size)
-  elif geom_type == mjtGeom.mjGEOM_CAPSULE:
+  elif shape_type == mjtGeom.mjGEOM_CAPSULE:
     mesh = trimesh.creation.capsule(radius=size[0], height=2.0 * size[1])
-  elif geom_type == mjtGeom.mjGEOM_CYLINDER:
+  elif shape_type == mjtGeom.mjGEOM_CYLINDER:
     mesh = trimesh.creation.cylinder(radius=size[0], height=2.0 * size[1])
-  elif geom_type == mjtGeom.mjGEOM_PLANE:
+  elif shape_type == mjtGeom.mjGEOM_PLANE:
     mesh = trimesh.creation.box((20, 20, 0.01))
-  elif geom_type == mjtGeom.mjGEOM_ELLIPSOID:
+  elif shape_type == mjtGeom.mjGEOM_ELLIPSOID:
     mesh = trimesh.creation.icosphere(subdivisions=3, radius=1.0)
     mesh.apply_scale(size)
-  elif geom_type == mjtGeom.mjGEOM_HFIELD:
-    # Which heightfield does this geom use?
+  elif shape_type == mjtGeom.mjGEOM_HFIELD:
+    if mj_model is None or geom_id is None:
+      raise ValueError("mj_model and geom_id required for HFIELD type")
     hfield_id = mj_model.geom_dataid[geom_id]
     nrow = mj_model.hfield_nrow[hfield_id]
     ncol = mj_model.hfield_ncol[hfield_id]
     sx, sy, sz, base = mj_model.hfield_size[hfield_id]
 
-    # Compute offset into the flat hfield_data array.
     offset = 0
     for k in range(hfield_id):
       offset += mj_model.hfield_nrow[k] * mj_model.hfield_ncol[k]
@@ -333,10 +341,29 @@ def create_primitive_mesh(mj_model: mujoco.MjModel, geom_id: int) -> trimesh.Tri
     faces = np.array(faces, dtype=np.int64)
     mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
   else:
-    raise ValueError(f"Unsupported primitive geom type: {geom_type}")
+    raise ValueError(f"Unsupported shape type: {shape_type}")
 
   mesh.visual = trimesh.visual.TextureVisuals(material=material)  # type: ignore
   return mesh
+
+
+def create_primitive_mesh(mj_model: mujoco.MjModel, geom_id: int) -> trimesh.Trimesh:
+  """Create a mesh for primitive geom types (sphere, box, capsule, cylinder, plane).
+
+  Args:
+    mj_model: MuJoCo model containing geom definition
+    geom_id: Index of the geom to create mesh for
+
+  Returns:
+    Trimesh representation of the primitive geom
+  """
+  return _create_shape_mesh(
+    shape_type=mj_model.geom_type[geom_id],
+    size=mj_model.geom_size[geom_id],
+    rgba=mj_model.geom_rgba[geom_id].copy(),
+    mj_model=mj_model,
+    geom_id=geom_id,
+  )
 
 
 def merge_geoms(mj_model: mujoco.MjModel, geom_ids: list[int]) -> trimesh.Trimesh:
@@ -455,3 +482,58 @@ def get_body_name(mj_model: mujoco.MjModel, body_id: int) -> str:
   if not body_name:
     body_name = f"body_{body_id}"
   return body_name
+
+
+def create_site_mesh(mj_model: mujoco.MjModel, site_id: int) -> trimesh.Trimesh:
+  """Create a mesh for a site.
+
+  Args:
+    mj_model: MuJoCo model containing site definition
+    site_id: Index of the site to create mesh for
+
+  Returns:
+    Trimesh representation of the site
+  """
+  site_type = int(mj_model.site_type[site_id])
+  # Default to sphere for unsupported site types.
+  supported_types = (
+    mjtGeom.mjGEOM_SPHERE,
+    mjtGeom.mjGEOM_BOX,
+    mjtGeom.mjGEOM_CAPSULE,
+    mjtGeom.mjGEOM_CYLINDER,
+    mjtGeom.mjGEOM_ELLIPSOID,
+  )
+  if site_type not in supported_types:
+    site_type = int(mjtGeom.mjGEOM_SPHERE)
+
+  return _create_shape_mesh(
+    shape_type=site_type,
+    size=mj_model.site_size[site_id],
+    rgba=mj_model.site_rgba[site_id].copy(),
+  )
+
+
+def merge_sites(mj_model: mujoco.MjModel, site_ids: list[int]) -> trimesh.Trimesh:
+  """Merge multiple sites into a single trimesh.
+
+  Args:
+    mj_model: MuJoCo model containing site definitions
+    site_ids: List of site indices to merge
+
+  Returns:
+    Single merged trimesh with all sites transformed to their local poses.
+  """
+  meshes = []
+  for site_id in site_ids:
+    mesh = create_site_mesh(mj_model, site_id)
+    pos = mj_model.site_pos[site_id]
+    quat = mj_model.site_quat[site_id]
+    transform = np.eye(4)
+    transform[:3, :3] = vtf.SO3(quat).as_matrix()
+    transform[:3, 3] = pos
+    mesh.apply_transform(transform)
+    meshes.append(mesh)
+
+  if len(meshes) == 1:
+    return meshes[0]
+  return trimesh.util.concatenate(meshes)

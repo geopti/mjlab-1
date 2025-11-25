@@ -52,6 +52,9 @@ class ViserPlayViewer(BaseViewer):
       True  # Enable debug visualization by default
     )
 
+    # Environment selector at top level (always visible across all tabs).
+    self._scene.create_env_selector_gui()
+
     # Create tab group.
     tabs = self._server.gui.add_tab_group()
 
@@ -123,8 +126,11 @@ class ViserPlayViewer(BaseViewer):
         ]
         self._reward_plotter = ViserRewardPlotter(self._server, term_names)
 
-    # Geom groups tab.
-    self._scene.create_geom_groups_gui(tabs)
+    # Groups tab (geom and site visibility).
+    self._scene.create_groups_gui(tabs)
+
+    # Overlays tab (annotations and contacts).
+    self._scene.create_overlays_gui(tabs)
 
   @override
   def sync_env_to_viewer(self) -> None:

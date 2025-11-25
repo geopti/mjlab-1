@@ -20,6 +20,7 @@ from mjlab.viewer.viser.conversions import (
   get_body_name,
   is_fixed_body,
   merge_geoms,
+  merge_sites,
   mujoco_mesh_to_trimesh,
   rotation_matrix_from_vectors,
   rotation_quat_from_vectors,
@@ -91,9 +92,19 @@ class ViserMujocoScene(DebugVisualizer):
   mesh_handles_by_group: dict[tuple[int, int], viser.BatchedGlbHandle] = field(
     default_factory=dict
   )
+  fixed_site_handles: dict[tuple[int, int], viser.GlbHandle] = field(
+    default_factory=dict
+  )
+  site_handles_by_group: dict[tuple[int, int], viser.BatchedGlbHandle] = field(
+    default_factory=dict
+  )
   contact_point_handle: viser.BatchedMeshHandle | None = None
   contact_force_shaft_handle: viser.BatchedMeshHandle | None = None
   contact_force_head_handle: viser.BatchedMeshHandle | None = None
+
+  # Annotation handles (labels and frames for sites/bodies).
+  _label_handles: dict[str, viser.LabelHandle] = field(default_factory=dict, init=False)
+  _frame_handles: dict[str, viser.FrameHandle] = field(default_factory=dict, init=False)
 
   # Visualization settings (set directly or automatically updated by create_options_gui).
   env_idx: int = 0  # Current environment index (DebugVisualizer protocol).
@@ -102,6 +113,13 @@ class ViserMujocoScene(DebugVisualizer):
   geom_groups_visible: list[bool] = field(
     default_factory=lambda: [True, True, True, False, False, False]
   )
+  site_groups_visible: list[bool] = field(
+    default_factory=lambda: [True, True, True, False, False, False]
+  )
+  # Annotation targets: which object types to show labels/frames for.
+  label_targets: set[str] = field(default_factory=set)  # "sites", "bodies"
+  frame_targets: set[str] = field(default_factory=set)  # "sites", "bodies"
+  frame_scale: float = 1.0  # Multiplier for coordinate frame size
   show_contact_points: bool = False
   show_contact_forces: bool = False
   contact_point_color: tuple[int, int, int] = _DEFAULT_CONTACT_POINT_COLOR
@@ -181,6 +199,9 @@ class ViserMujocoScene(DebugVisualizer):
     # Create mesh handles per geom group.
     scene._create_mesh_handles_by_group()
 
+    # Create site handles per site group.
+    scene._create_site_handles_by_group()
+
     # Find first non-fixed body for camera tracking.
     for body_id in range(mj_model.nbody):
       if not is_fixed_body(mj_model, body_id):
@@ -202,6 +223,14 @@ class ViserMujocoScene(DebugVisualizer):
     for (_body_id, group_id), handle in self.mesh_handles_by_group.items():
       handle.visible = group_id < 6 and self.geom_groups_visible[group_id]
 
+    # Site group meshes (fixed bodies).
+    for (_body_id, group_id), handle in self.fixed_site_handles.items():
+      handle.visible = group_id < 6 and self.site_groups_visible[group_id]
+
+    # Site group meshes (non-fixed bodies).
+    for (_body_id, group_id), handle in self.site_handles_by_group.items():
+      handle.visible = group_id < 6 and self.site_groups_visible[group_id]
+
     # Contact points.
     if self.contact_point_handle is not None and not self.show_contact_points:
       self.contact_point_handle.visible = False
@@ -212,6 +241,212 @@ class ViserMujocoScene(DebugVisualizer):
         self.contact_force_shaft_handle.visible = False
       if self.contact_force_head_handle is not None:
         self.contact_force_head_handle.visible = False
+
+  def _clear_annotations(self) -> None:
+    """Remove all annotation handles (labels and frames)."""
+    for handle in self._label_handles.values():
+      handle.remove()
+    self._label_handles.clear()
+
+    for handle in self._frame_handles.values():
+      handle.remove()
+    self._frame_handles.clear()
+
+  def _refresh_annotations(self) -> None:
+    """Recreate all annotations based on current label_targets and frame_targets."""
+    self._clear_annotations()
+
+    # Create site labels.
+    if "sites" in self.label_targets:
+      for site_id in range(self.mj_model.nsite):
+        site_group = self.mj_model.site_group[site_id]
+        if site_group >= 6 or not self.site_groups_visible[site_group]:
+          continue
+        site_name = mj_id2name(self.mj_model, mjtObj.mjOBJ_SITE, site_id)
+        if not site_name:
+          site_name = f"site_{site_id}"
+        label = self.server.scene.add_label(
+          f"/annotations/labels/site_{site_id}",
+          site_name,
+          wxyz=(1.0, 0.0, 0.0, 0.0),
+          position=(0.0, 0.0, 0.0),
+        )
+        self._label_handles[f"site_{site_id}"] = label
+
+    # Create body labels.
+    if "bodies" in self.label_targets:
+      for body_id in range(self.mj_model.nbody):
+        if is_fixed_body(self.mj_model, body_id):
+          continue
+        body_name = get_body_name(self.mj_model, body_id)
+        label = self.server.scene.add_label(
+          f"/annotations/labels/body_{body_id}",
+          body_name,
+          wxyz=(1.0, 0.0, 0.0, 0.0),
+          position=(0.0, 0.0, 0.0),
+        )
+        self._label_handles[f"body_{body_id}"] = label
+
+    # Create site frames.
+    if "sites" in self.frame_targets:
+      self._create_frame_handles("sites")
+
+    # Create body frames.
+    if "bodies" in self.frame_targets:
+      self._create_frame_handles("bodies")
+
+  def _create_frame_handles(self, target: str) -> None:
+    """Create coordinate frame visualization handles for the given target type."""
+    meansize = self.mj_model.stat.meansize
+    frame_length = self.mj_model.vis.scale.framelength * meansize * self.frame_scale
+    frame_width = self.mj_model.vis.scale.framewidth * meansize * self.frame_scale
+
+    # Create frames for each site/body.
+    if target == "sites":
+      for site_id in range(self.mj_model.nsite):
+        site_group = self.mj_model.site_group[site_id]
+        if site_group >= 6 or not self.site_groups_visible[site_group]:
+          continue
+        key = f"site_frame_{site_id}"
+        handle = self.server.scene.add_frame(
+          f"/annotations/frames/{key}",
+          axes_length=frame_length,
+          axes_radius=frame_width,
+        )
+        self._frame_handles[key] = handle
+
+    else:  # bodies
+      for body_id in range(self.mj_model.nbody):
+        if is_fixed_body(self.mj_model, body_id):
+          continue
+        key = f"body_frame_{body_id}"
+        handle = self.server.scene.add_frame(
+          f"/annotations/frames/{key}",
+          axes_length=frame_length,
+          axes_radius=frame_width,
+        )
+        self._frame_handles[key] = handle
+
+  def _update_annotations(
+    self,
+    body_xpos: np.ndarray,
+    body_xmat: np.ndarray,
+    env_idx: int,
+    scene_offset: np.ndarray,
+  ) -> None:
+    """Update positions of all annotations for the selected environment."""
+    if not self.label_targets and not self.frame_targets:
+      return
+
+    body_xquat = vtf.SO3.from_matrix(body_xmat).wxyz
+
+    # Update site labels.
+    if "sites" in self.label_targets:
+      for site_id in range(self.mj_model.nsite):
+        key = f"site_{site_id}"
+        if key not in self._label_handles:
+          continue
+        body_id = self.mj_model.site_bodyid[site_id]
+        site_pos_local = self.mj_model.site_pos[site_id]
+
+        if is_fixed_body(self.mj_model, body_id):
+          body_pos = self.mj_model.body(body_id).pos
+          body_quat = self.mj_model.body(body_id).quat
+          site_world_pos = body_pos + vtf.SO3(body_quat).as_matrix() @ site_pos_local
+        else:
+          body_pos = body_xpos[env_idx, body_id, :]
+          body_rot = vtf.SO3(body_xquat[env_idx, body_id, :]).as_matrix()
+          site_world_pos = body_pos + body_rot @ site_pos_local
+
+        self._label_handles[key].position = site_world_pos + scene_offset
+
+    # Update body labels.
+    if "bodies" in self.label_targets:
+      for body_id in range(self.mj_model.nbody):
+        key = f"body_{body_id}"
+        if key not in self._label_handles:
+          continue
+        body_pos = body_xpos[env_idx, body_id, :] + scene_offset
+        self._label_handles[key].position = body_pos
+
+    # Update site frames.
+    if "sites" in self.frame_targets:
+      self._update_frame_positions("sites", body_xpos, body_xmat, env_idx, scene_offset)
+
+    # Update body frames.
+    if "bodies" in self.frame_targets:
+      self._update_frame_positions(
+        "bodies", body_xpos, body_xmat, env_idx, scene_offset
+      )
+
+  def _update_frame_positions(
+    self,
+    target: str,
+    body_xpos: np.ndarray,
+    body_xmat: np.ndarray,
+    env_idx: int,
+    scene_offset: np.ndarray,
+  ) -> None:
+    """Update frame handle positions and orientations."""
+    body_xquat = vtf.SO3.from_matrix(body_xmat).wxyz
+
+    if target == "sites":
+      for site_id in range(self.mj_model.nsite):
+        key = f"site_frame_{site_id}"
+        if key not in self._frame_handles:
+          continue
+
+        body_id = self.mj_model.site_bodyid[site_id]
+        site_pos_local = self.mj_model.site_pos[site_id]
+        site_quat_local = self.mj_model.site_quat[site_id]
+
+        if is_fixed_body(self.mj_model, body_id):
+          body_pos = self.mj_model.body(body_id).pos
+          body_quat = self.mj_model.body(body_id).quat
+          body_rot = vtf.SO3(body_quat)
+        else:
+          body_pos = body_xpos[env_idx, body_id, :]
+          body_rot = vtf.SO3(body_xquat[env_idx, body_id, :])
+
+        site_world_pos = body_pos + body_rot.as_matrix() @ site_pos_local + scene_offset
+        site_world_quat = (body_rot @ vtf.SO3(site_quat_local)).wxyz
+
+        handle = self._frame_handles[key]
+        handle.position = site_world_pos
+        handle.wxyz = site_world_quat
+
+    else:  # bodies
+      for body_id in range(self.mj_model.nbody):
+        key = f"body_frame_{body_id}"
+        if key not in self._frame_handles:
+          continue
+
+        body_pos = body_xpos[env_idx, body_id, :] + scene_offset
+        body_quat = body_xquat[env_idx, body_id, :]
+
+        handle = self._frame_handles[key]
+        handle.position = body_pos
+        handle.wxyz = body_quat
+
+  def create_env_selector_gui(self) -> None:
+    """Add environment selector at top level (always visible across all tabs).
+
+    Should be called before creating the tab group.
+    """
+    if self.num_envs > 1:
+      env_slider = self.server.gui.add_slider(
+        "Environment",
+        min=0,
+        max=self.num_envs - 1,
+        step=1,
+        initial_value=self.env_idx,
+        hint=f"Select environment (0-{self.num_envs - 1})",
+      )
+
+      @env_slider.on_update
+      def _(_) -> None:
+        self.env_idx = int(env_slider.value)
+        self._request_update()
 
   def create_visualization_gui(
     self,
@@ -228,7 +463,7 @@ class ViserMujocoScene(DebugVisualizer):
       camera_elevation: Default camera elevation angle in degrees.
       show_debug_viz_control: Whether to show the debug visualization checkbox.
     """
-    with self.server.gui.add_folder("Visualization"):
+    with self.server.gui.add_folder("Camera"):
       slider_fov = self.server.gui.add_slider(
         "FOV (°)",
         min=_DEFAULT_FOV_MIN,
@@ -247,26 +482,16 @@ class ViserMujocoScene(DebugVisualizer):
       def _(client: viser.ClientHandle) -> None:
         client.camera.fov = np.radians(slider_fov.value)
 
-    # Environment selection (only if multiple environments).
-    with self.server.gui.add_folder("Environment"):
-      # Environment selection slider (if multiple envs).
+      # Camera tracking controls.
+      cb_camera_tracking = self.server.gui.add_checkbox(
+        "Track body",
+        initial_value=self.camera_tracking_enabled,
+        hint="Keep tracked body centered. Use Viser camera controls to adjust view.",
+      )
+
       if self.num_envs > 1:
-        env_slider = self.server.gui.add_slider(
-          "Select",
-          min=0,
-          max=self.num_envs - 1,
-          step=1,
-          initial_value=self.env_idx,
-          hint=f"Select environment (0-{self.num_envs - 1})",
-        )
-
-        @env_slider.on_update
-        def _(_) -> None:
-          self.env_idx = int(env_slider.value)
-          self._request_update()
-
         show_only_cb = self.server.gui.add_checkbox(
-          "Hide others",
+          "Hide other envs",
           initial_value=self.show_only_selected,
           hint="Show only the selected environment.",
         )
@@ -275,13 +500,6 @@ class ViserMujocoScene(DebugVisualizer):
         def _(_) -> None:
           self.show_only_selected = show_only_cb.value
           self._request_update()
-
-      # Camera tracking controls.
-      cb_camera_tracking = self.server.gui.add_checkbox(
-        "Track camera",
-        initial_value=self.camera_tracking_enabled,
-        hint="Keep tracked body centered. Use Viser camera controls to adjust view.",
-      )
 
       @cb_camera_tracking.on_update
       def _(_) -> None:
@@ -327,76 +545,17 @@ class ViserMujocoScene(DebugVisualizer):
             self.clear_debug_all()
           self._request_update()
 
-      # Contact visualization settings.
-      with self.server.gui.add_folder("Contacts"):
-        cb_contact_points = self.server.gui.add_checkbox(
-          "Points",
-          initial_value=False,
-          hint="Toggle contact point visualization.",
-        )
-        contact_point_color = self.server.gui.add_rgb(
-          "Points Color", initial_value=self.contact_point_color
-        )
-        cb_contact_forces = self.server.gui.add_checkbox(
-          "Forces",
-          initial_value=False,
-          hint="Toggle contact force visualization.",
-        )
-        contact_force_color = self.server.gui.add_rgb(
-          "Forces Color", initial_value=self.contact_force_color
-        )
-        meansize_input = self.server.gui.add_number(
-          "Scale",
-          step=self.mj_model.stat.meansize * 0.01,
-          initial_value=self.mj_model.stat.meansize,
-        )
-
-        @cb_contact_points.on_update
-        def _(_) -> None:
-          self.show_contact_points = cb_contact_points.value
-          self._sync_visibilities()
-          self._request_update()
-
-        @contact_point_color.on_update
-        def _(_) -> None:
-          self.contact_point_color = contact_point_color.value
-          if self.contact_point_handle is not None:
-            self.contact_point_handle.remove()
-            self.contact_point_handle = None
-          self._request_update()
-
-        @cb_contact_forces.on_update
-        def _(_) -> None:
-          self.show_contact_forces = cb_contact_forces.value
-          self._sync_visibilities()
-          self._request_update()
-
-        @contact_force_color.on_update
-        def _(_) -> None:
-          self.contact_force_color = contact_force_color.value
-          if self.contact_force_shaft_handle is not None:
-            self.contact_force_shaft_handle.remove()
-            self.contact_force_shaft_handle = None
-          if self.contact_force_head_handle is not None:
-            self.contact_force_head_handle.remove()
-            self.contact_force_head_handle = None
-          self._request_update()
-
-        @meansize_input.on_update
-        def _(_) -> None:
-          self.meansize_override = meansize_input.value
-          self._request_update()
-
-  def create_geom_groups_gui(self, tabs) -> None:
-    """Add geom groups tab to the given tab group.
+  def create_groups_gui(self, tabs) -> None:
+    """Add groups tab combining geom and site visibility controls.
 
     Args:
-      tabs: The viser tab group to add the geom groups tab to.
+      tabs: The viser tab group to add the groups tab to.
     """
-    with tabs.add_tab("Geoms", icon=viser.Icon.EYE):
+    with tabs.add_tab("Groups", icon=viser.Icon.EYE):
+      self.server.gui.add_markdown("**Geoms**")
       for i in range(6):
         cb = self.server.gui.add_checkbox(
-          f"Group {i}",
+          f"G{i}",
           initial_value=self.geom_groups_visible[i],
           hint=f"Show/hide geoms in group {i}",
         )
@@ -406,6 +565,146 @@ class ViserMujocoScene(DebugVisualizer):
           self.geom_groups_visible[group_idx] = event.target.value
           self._sync_visibilities()
           self._request_update()
+
+      self.server.gui.add_markdown("**Sites**")
+      for i in range(6):
+        cb = self.server.gui.add_checkbox(
+          f"S{i}",
+          initial_value=self.site_groups_visible[i],
+          hint=f"Show/hide sites in group {i}",
+        )
+
+        @cb.on_update
+        def _(event, group_idx=i) -> None:
+          self.site_groups_visible[group_idx] = event.target.value
+          self._sync_visibilities()
+          # Refresh annotations if any site annotations are enabled.
+          if "sites" in self.label_targets or "sites" in self.frame_targets:
+            self._refresh_annotations()
+            self._request_update()
+
+  def create_overlays_gui(self, tabs) -> None:
+    """Add overlays tab combining annotations and contacts.
+
+    Args:
+      tabs: The viser tab group to add the overlays tab to.
+    """
+    with tabs.add_tab("Overlays", icon=viser.Icon.LAYERS_LINKED):
+      # Labels section.
+      self.server.gui.add_markdown("**Labels**")
+      cb_site_labels = self.server.gui.add_checkbox(
+        "Sites",
+        initial_value="sites" in self.label_targets,
+        hint="Show text labels for visible sites",
+      )
+      cb_body_labels = self.server.gui.add_checkbox(
+        "Bodies",
+        initial_value="bodies" in self.label_targets,
+        hint="Show text labels for bodies",
+      )
+
+      # Frames section.
+      self.server.gui.add_markdown("**Frames**")
+      cb_site_frames = self.server.gui.add_checkbox(
+        "Sites",
+        initial_value="sites" in self.frame_targets,
+        hint="Show coordinate frames for visible sites",
+      )
+      cb_body_frames = self.server.gui.add_checkbox(
+        "Bodies",
+        initial_value="bodies" in self.frame_targets,
+        hint="Show coordinate frames for bodies",
+      )
+      frame_scale_input = self.server.gui.add_slider(
+        "Frame scale",
+        min=0.1,
+        max=5.0,
+        step=0.1,
+        initial_value=self.frame_scale,
+        hint="Scale multiplier for coordinate frames",
+      )
+
+      # Contacts section.
+      self.server.gui.add_markdown("**Contacts**")
+      cb_contact_points = self.server.gui.add_checkbox(
+        "Points",
+        initial_value=self.show_contact_points,
+        hint="Toggle contact point visualization.",
+      )
+      cb_contact_forces = self.server.gui.add_checkbox(
+        "Forces",
+        initial_value=self.show_contact_forces,
+        hint="Toggle contact force visualization.",
+      )
+      contact_scale_input = self.server.gui.add_number(
+        "Contact scale",
+        step=self.mj_model.stat.meansize * 0.01,
+        initial_value=self.meansize_override or self.mj_model.stat.meansize,
+        hint="Scale for contact visualization",
+      )
+
+      # Labels callbacks.
+      @cb_site_labels.on_update
+      def _(_) -> None:
+        if cb_site_labels.value:
+          self.label_targets.add("sites")
+        else:
+          self.label_targets.discard("sites")
+        self._refresh_annotations()
+        self._request_update()
+
+      @cb_body_labels.on_update
+      def _(_) -> None:
+        if cb_body_labels.value:
+          self.label_targets.add("bodies")
+        else:
+          self.label_targets.discard("bodies")
+        self._refresh_annotations()
+        self._request_update()
+
+      # Frames callbacks.
+      @cb_site_frames.on_update
+      def _(_) -> None:
+        if cb_site_frames.value:
+          self.frame_targets.add("sites")
+        else:
+          self.frame_targets.discard("sites")
+        self._refresh_annotations()
+        self._request_update()
+
+      @cb_body_frames.on_update
+      def _(_) -> None:
+        if cb_body_frames.value:
+          self.frame_targets.add("bodies")
+        else:
+          self.frame_targets.discard("bodies")
+        self._refresh_annotations()
+        self._request_update()
+
+      @frame_scale_input.on_update
+      def _(_) -> None:
+        self.frame_scale = frame_scale_input.value
+        if self.frame_targets:
+          self._refresh_annotations()
+          self._request_update()
+
+      # Contacts callbacks.
+      @cb_contact_points.on_update
+      def _(_) -> None:
+        self.show_contact_points = cb_contact_points.value
+        self._sync_visibilities()
+        self._request_update()
+
+      @cb_contact_forces.on_update
+      def _(_) -> None:
+        self.show_contact_forces = cb_contact_forces.value
+        self._sync_visibilities()
+        self._request_update()
+
+      @contact_scale_input.on_update
+      def _(_) -> None:
+        self.meansize_override = contact_scale_input.value
+        self._request_update()
 
   def update(self, wp_data, env_idx: int | None = None) -> None:
     """Update scene from batched simulation data.
@@ -525,8 +824,37 @@ class ViserMujocoScene(DebugVisualizer):
           else:
             handle.batched_positions = body_xpos[..., body_id, :] + scene_offset
             handle.batched_wxyzs = body_xquat[..., body_id, :]
+
+      # Update site positions (non-fixed bodies only).
+      for (body_id, _group_id), handle in self.site_handles_by_group.items():
+        if not handle.visible:
+          continue
+        # Sites follow their parent body's pose.
+        mocap_id = self.mj_model.body_mocapid[body_id]
+        if mocap_id >= 0:
+          if self.show_only_selected and self.num_envs > 1:
+            single_pos = mocap_pos[env_idx, mocap_id, :] + scene_offset
+            single_quat = mocap_quat[env_idx, mocap_id, :]
+            handle.batched_positions = np.tile(single_pos[None, :], (self.num_envs, 1))
+            handle.batched_wxyzs = np.tile(single_quat[None, :], (self.num_envs, 1))
+          else:
+            handle.batched_positions = mocap_pos[:, mocap_id, :] + scene_offset
+            handle.batched_wxyzs = mocap_quat[:, mocap_id, :]
+        else:
+          if self.show_only_selected and self.num_envs > 1:
+            single_pos = body_xpos[env_idx, body_id, :] + scene_offset
+            single_quat = body_xquat[env_idx, body_id, :]
+            handle.batched_positions = np.tile(single_pos[None, :], (self.num_envs, 1))
+            handle.batched_wxyzs = np.tile(single_quat[None, :], (self.num_envs, 1))
+          else:
+            handle.batched_positions = body_xpos[..., body_id, :] + scene_offset
+            handle.batched_wxyzs = body_xquat[..., body_id, :]
+
       if contacts is not None:
         self._update_contact_visualization(contacts, scene_offset)
+
+      # Update annotation positions (labels and frames).
+      self._update_annotations(body_xpos, body_xmat, env_idx, scene_offset)
 
       self.server.flush()
 
@@ -649,6 +977,29 @@ class ViserMujocoScene(DebugVisualizer):
             visible=True,
           )
 
+    # Add sites attached to fixed world bodies, grouped by site_group.
+    body_group_sites: dict[tuple[int, int], list[int]] = {}
+    for i in range(self.mj_model.nsite):
+      body_id = self.mj_model.site_bodyid[i]
+      if is_fixed_body(self.mj_model, body_id):
+        site_group = self.mj_model.site_group[i]
+        key = (body_id, site_group)
+        body_group_sites.setdefault(key, []).append(i)
+
+    for (body_id, group_id), site_ids in body_group_sites.items():
+      body_name = get_body_name(self.mj_model, body_id)
+      visible = group_id < 6 and self.site_groups_visible[group_id]
+      handle = self.server.scene.add_mesh_trimesh(
+        f"/fixed_bodies/{body_name}/sites_group{group_id}",
+        merge_sites(self.mj_model, site_ids),
+        cast_shadow=False,
+        receive_shadow=0.2,
+        position=self.mj_model.body(body_id).pos,
+        wxyz=self.mj_model.body(body_id).quat,
+        visible=visible,
+      )
+      self.fixed_site_handles[(body_id, group_id)] = handle
+
   def _create_mesh_handles_by_group(self) -> None:
     """Create mesh handles for each geom group separately to allow independent toggling."""
     # Group geoms by (body_id, group_id).
@@ -695,6 +1046,49 @@ class ViserMujocoScene(DebugVisualizer):
           visible=visible,
         )
         self.mesh_handles_by_group[(body_id, group_id)] = handle
+
+  def _create_site_handles_by_group(self) -> None:
+    """Create site handles for each site group on non-fixed bodies."""
+    # Group sites by (body_id, group_id).
+    body_group_sites: dict[tuple[int, int], list[int]] = {}
+
+    for i in range(self.mj_model.nsite):
+      body_id = self.mj_model.site_bodyid[i]
+
+      # Skip fixed world sites (handled in _add_fixed_geometry).
+      if is_fixed_body(self.mj_model, body_id):
+        continue
+
+      site_group = self.mj_model.site_group[i]
+      key = (body_id, site_group)
+      body_group_sites.setdefault(key, []).append(i)
+
+    # Create handles for each (body, group) combination.
+    with self.server.atomic():
+      for (body_id, group_id), site_indices in body_group_sites.items():
+        body_name = get_body_name(self.mj_model, body_id)
+
+        # Merge sites into a single mesh.
+        mesh = merge_sites(self.mj_model, site_indices)
+        lod_ratio = 1000.0 / mesh.vertices.shape[0]
+
+        # Check if this group should be visible.
+        visible = group_id < 6 and self.site_groups_visible[group_id]
+
+        # Create batched handle.
+        handle = self.server.scene.add_batched_meshes_trimesh(
+          f"/bodies/{body_name}/sites_group{group_id}",
+          mesh,
+          batched_wxyzs=np.array([1.0, 0.0, 0.0, 0.0])[None].repeat(
+            self.num_envs, axis=0
+          ),
+          batched_positions=np.array([0.0, 0.0, 0.0])[None].repeat(
+            self.num_envs, axis=0
+          ),
+          lod=((2.0, lod_ratio),) if lod_ratio < 0.5 else "off",
+          visible=visible,
+        )
+        self.site_handles_by_group[(body_id, group_id)] = handle
 
   def _extract_contacts_from_mjdata(self, mj_data: mujoco.MjData) -> list[_Contact]:
     """Extract contact data from given MuJoCo data."""
