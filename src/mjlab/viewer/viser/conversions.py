@@ -83,7 +83,8 @@ def mujoco_mesh_to_trimesh(
     # we need to duplicate vertices. Each face will get its own 3 vertices.
 
     # Duplicate vertices for each face reference.
-    # faces.flatten() gives us vertex indices in order: [v0_f0, v1_f0, v2_f0, v0_f1, v1_f1, v2_f1, ...]
+    # faces.flatten() gives us vertex indices in order:
+    # [v0_f0, v1_f0, v2_f0, v0_f1, v1_f1, v2_f1, ...].
     new_vertices = vertices[faces.flatten()]  # Shape: (face_count * 3, 3)
     assert new_vertices.shape == (
       face_count * 3,
@@ -214,7 +215,8 @@ def mujoco_mesh_to_trimesh(
       )
       if verbose:
         print(
-          f"No material, using default {'collision' if is_collision else 'visual'} color"
+          f"No material, using default {'collision' if is_collision else 'visual'} "
+          "color"
         )
 
   else:

@@ -40,7 +40,7 @@ class ViserPlayViewer(BaseViewer):
     self._counter = 0
     self._needs_update = False
 
-    # Create ViserMujocoScene for all 3D visualization (with debug visualization enabled).
+    # Create ViserMujocoScene for all 3D visualization.
     self._scene = ViserMujocoScene.create(
       server=self._server,
       mj_model=sim.mj_model,
@@ -49,7 +49,7 @@ class ViserPlayViewer(BaseViewer):
 
     self._scene.env_idx = self.cfg.env_idx
     self._scene.debug_visualization_enabled = (
-      True  # Enable debug visualization by default
+      True  # Enable debug visualization by default.
     )
 
     # Environment selector at top level (always visible across all tabs).
@@ -105,7 +105,6 @@ class ViserPlayViewer(BaseViewer):
             self.increase_speed()
           self._update_status_display()
 
-      # Add standard visualization options from ViserMujocoScene (Environment, Visualization, Contacts, Camera Tracking, Debug Visualization).
       self._scene.create_visualization_gui(
         camera_distance=self.cfg.distance,
         camera_azimuth=self.cfg.azimuth,
