@@ -43,7 +43,7 @@ build:
 
 .PHONY: docs
 docs:
-	uv run sphinx-build docs_web docs_web/_build
+	uv run --extra docs sphinx-build docs_web docs_web/_build
 
 .PHONY: docker-build
 docker-build:
