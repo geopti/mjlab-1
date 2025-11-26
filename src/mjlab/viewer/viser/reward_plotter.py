@@ -20,55 +20,39 @@ class ViserRewardPlotter:
     """Initialize the reward plotter.
 
     Args:
-      server: The Viser server instance
-      term_names: List of reward term names to plot
-      history_length: Number of points to keep in history
-      max_terms: Maximum number of reward terms to plot
+      server: The Viser server instance.
+      term_names: List of reward term names to plot.
+      history_length: Number of points to keep in history.
+      max_terms: Maximum number of reward terms to plot.
     """
     self._server = server
     self._history_length = history_length
     self._max_terms = max_terms
-
-    # State
     self._term_names = term_names[: self._max_terms]
     self._histories: dict[str, deque[float]] = {}
     self._plot_handles: dict[str, viser.GuiUplotHandle] = {}
-
-    # Pre-allocated x-axis array (reused for all plots)
     self._x_array = np.arange(-history_length + 1, 1, dtype=np.float64)
     self._folder_handle = None
 
-    # Add checkbox to enable/disable reward plots
     self._enabled_checkbox = self._server.gui.add_checkbox(
       "Enable reward plots", initial_value=False
     )
 
     @self._enabled_checkbox.on_update
     def _(_) -> None:
-      # Show/hide plots based on checkbox state
       for handle in self._plot_handles.values():
         handle.visible = self._enabled_checkbox.value
 
-    # Create individual plot for each reward term
     for name in self._term_names:
-      # Initialize history deque for this term
       self._histories[name] = deque(maxlen=self._history_length)
-
-      # Create initial empty data
       x_data = np.array([], dtype=np.float64)
       y_data = np.array([], dtype=np.float64)
 
-      # Configure series for this single term
       series = [
-        viser.uplot.Series(label="Steps"),  # X-axis
-        viser.uplot.Series(
-          label=name,
-          stroke="#1f77b4",  # Blue for all plots
-          width=2,
-        ),
+        viser.uplot.Series(label="Steps"),
+        viser.uplot.Series(label=name, stroke="#1f77b4", width=2),
       ]
 
-      # Create uPlot chart for this term with title
       plot_handle = self._server.gui.add_uplot(
         data=(x_data, y_data),
         series=tuple(series),
@@ -78,9 +62,9 @@ class ViserRewardPlotter:
           ),
           "y": viser.uplot.Scale(auto=True),
         },
-        legend=viser.uplot.Legend(show=False),  # No legend needed for single series
-        title=name,  # Add title to the plot
-        aspect=2.0,  # Wider aspect ratio for individual plots
+        legend=viser.uplot.Legend(show=False),
+        title=name,
+        aspect=2.0,
         visible=False,
       )
 
@@ -124,7 +108,7 @@ class ViserRewardPlotter:
     """Set visibility of all plots.
 
     Args:
-      visible: Whether plots should be visible
+      visible: Whether plots should be visible.
     """
     for handle in self._plot_handles.values():
       handle.visible = visible

@@ -453,48 +453,33 @@ def get_body_name(mj_model: mujoco.MjModel, body_id: int) -> str:
   return body_name
 
 
-def create_site_mesh(mj_model: mujoco.MjModel, site_id: int) -> trimesh.Trimesh:
-  """Create a mesh for a site.
+def merge_sites(mj_model: mujoco.MjModel, site_ids: list[int]) -> trimesh.Trimesh:
+  """Merge multiple sites into a single trimesh.
 
   Args:
-    mj_model: MuJoCo model containing site definition
-    site_id: Index of the site to create mesh for
+    mj_model: MuJoCo model containing site definitions.
+    site_ids: List of site indices to merge.
 
   Returns:
-    Trimesh representation of the site
+    Single merged trimesh with all sites transformed to their local poses.
   """
-  site_type = int(mj_model.site_type[site_id])
-  # Default to sphere for unsupported site types.
-  supported_types = (
+  supported_types = {
     mjtGeom.mjGEOM_SPHERE,
     mjtGeom.mjGEOM_BOX,
     mjtGeom.mjGEOM_CAPSULE,
     mjtGeom.mjGEOM_CYLINDER,
     mjtGeom.mjGEOM_ELLIPSOID,
-  )
-  if site_type not in supported_types:
-    site_type = int(mjtGeom.mjGEOM_SPHERE)
-
-  return _create_shape_mesh(
-    shape_type=site_type,
-    size=mj_model.site_size[site_id],
-    rgba=mj_model.site_rgba[site_id].copy(),
-  )
-
-
-def merge_sites(mj_model: mujoco.MjModel, site_ids: list[int]) -> trimesh.Trimesh:
-  """Merge multiple sites into a single trimesh.
-
-  Args:
-    mj_model: MuJoCo model containing site definitions
-    site_ids: List of site indices to merge
-
-  Returns:
-    Single merged trimesh with all sites transformed to their local poses.
-  """
+  }
   meshes = []
   for site_id in site_ids:
-    mesh = create_site_mesh(mj_model, site_id)
+    site_type = int(mj_model.site_type[site_id])
+    if site_type not in supported_types:
+      site_type = int(mjtGeom.mjGEOM_SPHERE)
+    mesh = _create_shape_mesh(
+      shape_type=site_type,
+      size=mj_model.site_size[site_id],
+      rgba=mj_model.site_rgba[site_id].copy(),
+    )
     pos = mj_model.site_pos[site_id]
     quat = mj_model.site_quat[site_id]
     transform = np.eye(4)
