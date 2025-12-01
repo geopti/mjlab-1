@@ -41,6 +41,8 @@
     <mesh file="model2__15.stl"/>
     <mesh file="model2__16.stl"/>
     <mesh file="model2__17.stl"/>
+
+    <mesh name="camera_d405" file="d405.stl"/>
   </asset>
 
   <worldbody>
@@ -125,6 +127,14 @@
                         <geom name="lf_down10_collision" class="sphere_collision" pos="0.003  -0.0004 0.06"/>
                         <geom name="lf_down11_collision" class="sphere_collision" pos="-0.003 -0.0004 0.06"/>
                       </body>
+                    </body>
+                  </body>
+                  <body name="camera_d405" pos="-0.0107 0.079729 0.066021" quat="0.953717 0.3007058 0 0">
+                    <geom class="visual" mesh="camera_d405"/>
+                    <geom class="collision" type="box" size=".018 .018 .01" pos="0 0 -0.01"/>
+                    <body name="left_camera_frame" pos="0.009 0 0" quat="0 0 0 1">
+                      <camera name="left_camera_d405" pos="0 0 0" quat="0 1 0 0" resolution="1280 720"
+                        sensorsize="0.003896 0.00214" focal="0.00193 0.00193"/>
                     </body>
                   </body>
                   <body name="link_right_finger" pos="0.037 -0.0392 0.0605" quat="1 0 1 0">
