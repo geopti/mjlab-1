@@ -38,11 +38,11 @@ If you use mjlab in your research, we would appreciate a citation:
 
 .. code-block:: bibtex
 
-    @software{Zakka_MJLab_Isaac_Lab_2025,
+    @software{Zakka_Mjlab_Isaac_Lab_2025,
         author = {Zakka, Kevin and Yi, Brent and Liao, Qiayuan and Le Lay, Louis},
         license = {Apache-2.0},
         month = sep,
-        title = {{MJLab: Isaac Lab API, powered by MuJoCo-Warp, for RL and robotics research.}},
+        title = {{mjlab: Isaac Lab API, powered by MuJoCo-Warp, for RL and robotics research.}},
         url = {https://github.com/mujocolab/mjlab},
         version = {0.1.0},
         year = {2025}
