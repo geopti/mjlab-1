@@ -13,6 +13,7 @@ from typing_extensions import override
 from mjlab.sensor.camera_sensor import CameraSensor
 from mjlab.sim.sim import Simulation
 from mjlab.viewer.base import BaseViewer, EnvProtocol, PolicyProtocol, VerbosityLevel
+from mjlab.viewer.viser.camera_viewer import ViserCameraViewer
 from mjlab.viewer.viser.reward_plotter import ViserRewardPlotter
 from mjlab.viewer.viser.scene import ViserMujocoScene
 
