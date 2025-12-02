@@ -9,7 +9,7 @@ from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs.mdp.actions import JointPositionActionCfg
 from mjlab.sensor import ContactSensorCfg
 from mjlab.tasks.manipulation.lift_cube_env_cfg import make_lift_cube_env_cfg
-from mjlab.tasks.manipulation.mdp import LiftingCommandCfg
+from mjlab.tasks.manipulation.mdp import PoseCommandCfg
 
 
 def get_cube_spec(cube_size: float = 0.02, mass: float = 0.05) -> mujoco.MjSpec:
@@ -42,7 +42,7 @@ def yam_lift_cube_env_cfg(
 
   assert cfg.commands is not None
   lift_command = cfg.commands["lift_height"]
-  assert isinstance(lift_command, LiftingCommandCfg)
+  assert isinstance(lift_command, PoseCommandCfg)
 
   cfg.observations["policy"].terms["ee_to_cube"].params["asset_cfg"].site_names = (
     "grasp_site",

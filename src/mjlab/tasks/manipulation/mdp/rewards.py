@@ -6,7 +6,7 @@ import torch
 
 from mjlab.entity import Entity
 from mjlab.managers.scene_entity_config import SceneEntityCfg
-from mjlab.tasks.manipulation.mdp.commands import LiftingCommand
+from mjlab.tasks.manipulation.mdp.commands import PoseCommand
 
 if TYPE_CHECKING:
   from mjlab.envs import ManagerBasedRlEnv
@@ -29,7 +29,7 @@ def staged_position_reward(
   """
   robot: Entity = env.scene[asset_cfg.name]
   obj: Entity = env.scene[object_name]
-  command = cast(LiftingCommand, env.command_manager.get_term(command_name))
+  command = cast(PoseCommand, env.command_manager.get_term(command_name))
   ee_pos_w = robot.data.site_pos_w[:, asset_cfg.site_ids].squeeze(1)
   obj_pos_w = obj.data.root_link_pos_w
   reach_error = torch.sum(torch.square(ee_pos_w - obj_pos_w), dim=-1)
@@ -44,13 +44,22 @@ def bring_object_reward(
   command_name: str,
   object_name: str,
   std: float,
+  success_threshold: float = 0.05,
 ) -> torch.Tensor:
   obj: Entity = env.scene[object_name]
-  command = cast(LiftingCommand, env.command_manager.get_term(command_name))
-  position_error = torch.sum(
-    torch.square(command.target_pos - obj.data.root_link_pos_w), dim=-1
-  )
-  return torch.exp(-position_error / std**2)
+  command = cast(PoseCommand, env.command_manager.get_term(command_name))
+
+  obj_pos_w = obj.data.root_link_pos_w
+  position_error = command.target_pos - obj_pos_w
+  position_error_sq = torch.sum(torch.square(position_error), dim=-1)
+
+  position_error_norm = torch.norm(position_error, dim=-1)
+  at_goal = (position_error_norm < success_threshold).float()
+  env.extras["log"]["Metrics/object_height"] = obj_pos_w[:, 2]
+  env.extras["log"]["Metrics/position_error"] = position_error_norm
+  env.extras["log"]["Metrics/at_goal"] = at_goal
+  
+  return torch.exp(-position_error_sq / std**2)
 
 
 def joint_velocity_hinge_penalty(

@@ -15,7 +15,7 @@ from mjlab.scene import SceneCfg
 from mjlab.sensor import ContactMatch, ContactSensorCfg
 from mjlab.sim import MujocoCfg, SimulationCfg
 from mjlab.tasks.manipulation import mdp as manipulation_mdp
-from mjlab.tasks.manipulation.mdp import LiftingCommandCfg
+from mjlab.tasks.manipulation.mdp import PoseCommandCfg
 from mjlab.tasks.velocity import mdp
 from mjlab.terrains import TerrainImporterCfg
 from mjlab.utils.noise import UniformNoiseCfg as Unoise
@@ -70,28 +70,23 @@ def make_lift_cube_env_cfg() -> ManagerBasedRlEnvCfg:
   }
 
   commands: dict[str, CommandTermCfg] = {
-    "lift_height": LiftingCommandCfg(
-      asset_name="cube",
+    "lift_height": PoseCommandCfg(
       resampling_time_range=(8.0, 12.0),
       debug_vis=True,
       difficulty="dynamic",
-      object_pose_range=LiftingCommandCfg.ObjectPoseRangeCfg(
-        x=(0.2, 0.4),
-        y=(-0.2, 0.2),
-        z=(0.02, 0.05),
-        yaw=(-3.14, 3.14),
-      ),
     )
   }
 
   events = {
     # For positioning the base of the robot at env_origins.
-    "reset_base": EventTermCfg(
+
+    "reset_object": EventTermCfg(
       func=mdp.reset_root_state_uniform,
-      mode="startup",
+      mode="reset",
       params={
-        "pose_range": {},
+        "pose_range": {"x": (0.2, 0.4), "y": (-0.2, 0.2), "z": (0.02, 0.05), "yaw": (-3.14, 3.14)},
         "velocity_range": {},
+        "asset_cfg": SceneEntityCfg("cube"),
       },
     ),
     "reset_robot_joints": EventTermCfg(
