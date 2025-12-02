@@ -1,16 +1,13 @@
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
 import torch
 
-from mjlab.entity import Entity
 from mjlab.managers.command_manager import CommandTerm
 from mjlab.managers.manager_term_config import CommandTermCfg
 from mjlab.utils.lab_api.math import (
-  quat_from_euler_xyz,
   sample_uniform,
 )
 

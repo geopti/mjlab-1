@@ -91,7 +91,12 @@ def make_lift_cube_env_cfg() -> ManagerBasedRlEnvCfg:
       func=mdp.reset_root_state_uniform,
       mode="reset",
       params={
-        "pose_range": {"x": (0.2, 0.4), "y": (-0.2, 0.2), "z": (0.02, 0.05), "yaw": (-3.14, 3.14)},
+        "pose_range": {
+          "x": (0.2, 0.4),
+          "y": (-0.2, 0.2),
+          "z": (0.02, 0.05),
+          "yaw": (-3.14, 3.14),
+        },
         "velocity_range": {},
         "asset_cfg": SceneEntityCfg("cube"),
       },
