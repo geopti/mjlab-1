@@ -79,7 +79,14 @@ def make_lift_cube_env_cfg() -> ManagerBasedRlEnvCfg:
 
   events = {
     # For positioning the base of the robot at env_origins.
-
+    "reset_base": EventTermCfg(
+      func=mdp.reset_root_state_uniform,
+      mode="startup",
+      params={
+        "pose_range": {},
+        "velocity_range": {},
+      },
+    ),
     "reset_object": EventTermCfg(
       func=mdp.reset_root_state_uniform,
       mode="reset",
