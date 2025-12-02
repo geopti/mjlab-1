@@ -95,7 +95,7 @@ def yam_lift_cube_vision_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   cfg = yam_lift_cube_env_cfg(play=play)
 
   # Add camera sensor.
-  camera_cfg = CameraSensorCfg(
+  wrist_camera_cfg = CameraSensorCfg(
     name="wrist_camera",
     camera_name="robot/camera_d405",
     width=64,
@@ -103,7 +103,15 @@ def yam_lift_cube_vision_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     type=("rgb",),
     update_period=0.04,  # 25 Hz.
   )
-  cfg.scene.sensors = (cfg.scene.sensors or ()) + (camera_cfg,)
+  front_camera_cfg = CameraSensorCfg(
+    name="front_camera",
+    camera_name="robot/front_cam",
+    width=64,
+    height=64,
+    type=("rgb",),
+    update_period=0.04,  # 25 Hz.
+  )
+  cfg.scene.sensors = (cfg.scene.sensors or ()) + (wrist_camera_cfg, front_camera_cfg)
 
   # Add camera observation group.
   camera_obs = ObservationGroupCfg(
