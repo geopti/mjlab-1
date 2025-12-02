@@ -118,4 +118,9 @@ def yam_lift_cube_vision_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   )
   cfg.observations["camera"] = camera_obs
 
+  # Pop privileged info from policy observations.
+  policy_obs = cfg.observations["policy"]
+  policy_obs.terms.pop("ee_to_cube")
+  policy_obs.terms.pop("cube_to_goal")
+
   return cfg
