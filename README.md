@@ -1,4 +1,4 @@
-![Project banner](docs_web/source/_static/mjlab-banner.jpg)
+![Project banner](docs/source/_static/mjlab-banner.jpg)
 
 # mjlab
 
@@ -173,7 +173,7 @@ make format
 Compile documentation locally:
 
 ```bash
-uv pip install -r docs_web/requirements.txt
+uv pip install -r docs/requirements.txt
 make docs
 ```
 

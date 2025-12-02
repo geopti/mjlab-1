@@ -16,14 +16,14 @@ jobs:
       - uses: actions/setup-python@v5
 
       - name: Install dev requirements
-        working-directory: ./docs_web
+        working-directory: ./docs
         run: pip install -r requirements.txt
 
       - name: Build Sphinx Documentation
-        run: sphinx-build docs_web docs_web/_build
+        run: sphinx-build docs docs/_build
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs_web/_build/
+          publish_dir: ./docs/_build/
