@@ -7,7 +7,7 @@ import torch
 from mjlab.entity import Entity
 from mjlab.managers.manager_term_config import RewardTermCfg
 from mjlab.managers.scene_entity_config import SceneEntityCfg
-from mjlab.tasks.manipulation.mdp.commands import PoseCommand
+from mjlab.tasks.manipulation.mdp.commands import PositionCommand
 
 if TYPE_CHECKING:
   from mjlab.envs import ManagerBasedRlEnv
@@ -30,7 +30,7 @@ def staged_position_reward(
   """
   robot: Entity = env.scene[asset_cfg.name]
   obj: Entity = env.scene[object_name]
-  command = cast(PoseCommand, env.command_manager.get_term(command_name))
+  command = cast(PositionCommand, env.command_manager.get_term(command_name))
   ee_pos_w = robot.data.site_pos_w[:, asset_cfg.site_ids].squeeze(1)
   obj_pos_w = obj.data.root_link_pos_w
   reach_error = torch.sum(torch.square(ee_pos_w - obj_pos_w), dim=-1)
@@ -55,7 +55,7 @@ class bring_object_reward:
     success_threshold: float = 0.05,
   ) -> torch.Tensor:
     obj: Entity = env.scene[object_name]
-    command = cast(PoseCommand, env.command_manager.get_term(command_name))
+    command = cast(PositionCommand, env.command_manager.get_term(command_name))
 
     obj_pos_w = obj.data.root_link_pos_w
     position_error = command.target_pos - obj_pos_w

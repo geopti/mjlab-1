@@ -16,10 +16,10 @@ if TYPE_CHECKING:
   from mjlab.viewer.debug_visualizer import DebugVisualizer
 
 
-class PoseCommand(CommandTerm):
-  cfg: PoseCommandCfg
+class PositionCommand(CommandTerm):
+  cfg: PositionCommandCfg
 
-  def __init__(self, cfg: PoseCommandCfg, env: ManagerBasedRlEnv):
+  def __init__(self, cfg: PositionCommandCfg, env: ManagerBasedRlEnv):
     super().__init__(cfg, env)
 
     self.target_pos = torch.zeros(self.num_envs, 3, device=self.device)
@@ -66,8 +66,8 @@ class PoseCommand(CommandTerm):
 
 
 @dataclass(kw_only=True)
-class PoseCommandCfg(CommandTermCfg):
-  class_type: type[CommandTerm] = PoseCommand
+class PositionCommandCfg(CommandTermCfg):
+  class_type: type[CommandTerm] = PositionCommand
   difficulty: Literal["fixed", "dynamic"] = "fixed"
 
   @dataclass

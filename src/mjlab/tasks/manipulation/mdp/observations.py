@@ -6,7 +6,7 @@ import torch
 
 from mjlab.entity import Entity
 from mjlab.managers.scene_entity_config import SceneEntityCfg
-from mjlab.tasks.manipulation.mdp.commands import PoseCommand
+from mjlab.tasks.manipulation.mdp.commands import PositionCommand
 from mjlab.utils.lab_api.math import quat_apply, quat_inv
 
 if TYPE_CHECKING:
@@ -38,9 +38,9 @@ def object_position_error(
 ) -> torch.Tensor:
   """3D position error between object and target position (target - current)."""
   command = env.command_manager.get_term(command_name)
-  if not isinstance(command, PoseCommand):
+  if not isinstance(command, PositionCommand):
     raise TypeError(
-      f"Command '{command_name}' must be a PoseCommand, got {type(command)}"
+      f"Command '{command_name}' must be a PositionCommand, got {type(command)}"
     )
   obj: Entity = env.scene[object_name]
   obj_pos_w = obj.data.root_link_pos_w

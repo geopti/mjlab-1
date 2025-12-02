@@ -15,7 +15,7 @@ from mjlab.scene import SceneCfg
 from mjlab.sensor import ContactMatch, ContactSensorCfg
 from mjlab.sim import MujocoCfg, SimulationCfg
 from mjlab.tasks.manipulation import mdp as manipulation_mdp
-from mjlab.tasks.manipulation.mdp import PoseCommandCfg
+from mjlab.tasks.manipulation.mdp import PositionCommandCfg
 from mjlab.tasks.velocity import mdp
 from mjlab.terrains import TerrainImporterCfg
 from mjlab.utils.noise import UniformNoiseCfg as Unoise
@@ -70,7 +70,7 @@ def make_lift_cube_env_cfg() -> ManagerBasedRlEnvCfg:
   }
 
   commands: dict[str, CommandTermCfg] = {
-    "lift_height": PoseCommandCfg(
+    "lift_height": PositionCommandCfg(
       resampling_time_range=(8.0, 12.0),
       debug_vis=True,
       difficulty="dynamic",
