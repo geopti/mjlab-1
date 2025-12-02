@@ -33,7 +33,10 @@ def yam_lift_cube_env_cfg(
 
   cfg.scene.entities = {
     "robot": get_yam_robot_cfg(),
-    "cube": EntityCfg(spec_fn=get_cube_spec),
+    "cube": EntityCfg(
+      spec_fn=get_cube_spec,
+      init_state=EntityCfg.InitialStateCfg(pos=(0.3, 0.0, 0.035)),
+    ),
   }
 
   joint_pos_action = cfg.actions["joint_pos"]
