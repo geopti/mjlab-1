@@ -306,7 +306,7 @@ def main(config: BenchmarkConfig) -> None:
         "avg_memory_mb": float(np.mean(memory_vals)),
         "num_runs": config.num_runs,
       }
-      results.append(aggregated_result)
+      results.append(aggregated_result)  # type: ignore[invalid-argument-type]
 
       # Update progress bar with results
       pbar.set_postfix(
@@ -521,8 +521,8 @@ def generate_visualization(
     ax1.legend(fontsize=9, loc="best")
     ax1.grid(True, alpha=0.3, axis="y")
 
-    # Right plot: Overhead percentage as grouped bars (only if plot_overhead is True)
-    if plot_overhead and "overhead_pct" in df.columns:
+    # Right plot: Overhead percentage as grouped bars (only if both conditions met)
+    if config.include_baseline and plot_overhead and "overhead_pct" in df.columns:
       df_overhead = df_camera.copy()
 
       for i, resolution in enumerate(resolutions):
@@ -541,7 +541,7 @@ def generate_visualization(
               overhead_vals.append(0)
 
           offset = (i - len(resolutions) / 2 + 0.5) * width
-          ax2.bar(
+          ax2.bar(  # type: ignore[possibly-unbound]
             x + offset,
             overhead_vals,
             width,
@@ -552,14 +552,14 @@ def generate_visualization(
             color=colors[i],
           )
 
-      ax2.set_xlabel("Number of Environments", fontsize=12, fontweight="bold")
-      ax2.set_ylabel("Overhead (%)", fontsize=12, fontweight="bold")
-      ax2.set_title("Camera Overhead vs Baseline", fontsize=14, fontweight="bold")
-      ax2.set_xticks(x)
-      ax2.set_xticklabels(num_envs_list)
-      ax2.legend(fontsize=9, loc="best")
-      ax2.grid(True, alpha=0.3, axis="y")
-      ax2.axhline(y=0, color="black", linestyle="--", alpha=0.5, linewidth=1)
+      ax2.set_xlabel("Number of Environments", fontsize=12, fontweight="bold")  # type: ignore[possibly-unbound]
+      ax2.set_ylabel("Overhead (%)", fontsize=12, fontweight="bold")  # type: ignore[possibly-unbound]
+      ax2.set_title("Camera Overhead vs Baseline", fontsize=14, fontweight="bold")  # type: ignore[possibly-unbound]
+      ax2.set_xticks(x)  # type: ignore[possibly-unbound]
+      ax2.set_xticklabels(num_envs_list)  # type: ignore[possibly-unbound]
+      ax2.legend(fontsize=9, loc="best")  # type: ignore[possibly-unbound]
+      ax2.grid(True, alpha=0.3, axis="y")  # type: ignore[possibly-unbound]
+      ax2.axhline(y=0, color="black", linestyle="--", alpha=0.5, linewidth=1)  # type: ignore[possibly-unbound]
 
     fig.suptitle(f"Device: {device_name}", fontsize=11, y=0.98)
 

@@ -163,7 +163,7 @@ def test_material_colors():
       # Check visual colors.
       if mesh.visual and hasattr(mesh.visual, "vertex_colors"):
         # Get the first vertex color (they should all be the same).
-        color = mesh.visual.vertex_colors[0]
+        color = mesh.visual.vertex_colors[0]  # type: ignore[index]
         colors_found.append(tuple(color))
 
   assert len(colors_found) == 3, "Should have 3 meshes"

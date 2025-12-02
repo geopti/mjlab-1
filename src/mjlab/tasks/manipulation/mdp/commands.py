@@ -26,6 +26,7 @@ class LiftingCommand(CommandTerm):
     super().__init__(cfg, env)
 
     self.object: Entity = env.scene[cfg.asset_name]
+    self.goal_entity: Entity = env.scene[cfg.goal_entity_name]
     self.target_pos = torch.zeros(self.num_envs, 3, device=self.device)
     self.episode_success = torch.zeros(self.num_envs, device=self.device)
 
@@ -33,6 +34,10 @@ class LiftingCommand(CommandTerm):
     self.metrics["position_error"] = torch.zeros(self.num_envs, device=self.device)
     self.metrics["at_goal"] = torch.zeros(self.num_envs, device=self.device)
     self.metrics["episode_success"] = torch.zeros(self.num_envs, device=self.device)
+
+    self._identity_quat = torch.tensor([1.0, 0.0, 0.0, 0.0], device=self.device).expand(
+      self.num_envs, 4
+    )
 
   @property
   def command(self) -> torch.Tensor:
@@ -76,6 +81,10 @@ class LiftingCommand(CommandTerm):
       target_pos = sample_uniform(lower, upper, (n, 3), device=self.device)
       self.target_pos[env_ids] = target_pos + self._env.scene.env_origins[env_ids]
 
+    # Update goal entity pose.
+    pose = torch.cat([self.target_pos[env_ids], self._identity_quat[env_ids]], dim=-1)
+    self.goal_entity.write_mocap_pose_to_sim(pose, env_ids=env_ids)
+
     # Reset object to new position.
     if self.cfg.object_pose_range is not None:
       r = self.cfg.object_pose_range
@@ -102,22 +111,13 @@ class LiftingCommand(CommandTerm):
     pass
 
   def _debug_vis_impl(self, visualizer: DebugVisualizer) -> None:
-    batch = visualizer.env_idx
-    if batch >= self.num_envs:
-      return
-
-    target_pos = self.target_pos[batch].cpu().numpy()
-    visualizer.add_sphere(
-      center=target_pos,
-      radius=0.03,
-      color=self.cfg.viz.target_color,
-      label="target_position",
-    )
+    del visualizer  # Unused.
 
 
 @dataclass(kw_only=True)
 class LiftingCommandCfg(CommandTermCfg):
   asset_name: str
+  goal_entity_name: str
   class_type: type[CommandTerm] = LiftingCommand
   success_threshold: float = 0.05
   difficulty: Literal["fixed", "dynamic"] = "fixed"

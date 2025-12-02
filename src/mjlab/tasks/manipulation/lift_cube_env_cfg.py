@@ -72,6 +72,7 @@ def make_lift_cube_env_cfg() -> ManagerBasedRlEnvCfg:
   commands: dict[str, CommandTermCfg] = {
     "lift_height": LiftingCommandCfg(
       asset_name="cube",
+      goal_entity_name="goal",
       resampling_time_range=(8.0, 12.0),
       debug_vis=True,
       difficulty="dynamic",

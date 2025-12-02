@@ -174,12 +174,15 @@ def mujoco_mesh_to_trimesh(
           # Set PBR properties for proper rendering:
           # - metallicFactor=0.0: non-metallic (dielectric) material
           # - roughnessFactor=1.0: fully rough (diffuse) surface
-          material = trimesh.visual.material.PBRMaterial(
-            baseColorFactor=rgba,
-            baseColorTexture=image,
-            metallicFactor=0.0,
-            roughnessFactor=1.0,
-          )
+          material_kwargs = {
+            "baseColorFactor": rgba,
+            "baseColorTexture": image,
+            "metallicFactor": 0.0,
+            "roughnessFactor": 1.0,
+          }
+          if rgba[3] < 1.0:
+            material_kwargs["alphaMode"] = "BLEND"
+          material = trimesh.visual.material.PBRMaterial(**material_kwargs)
 
           # Apply texture visual with UV coordinates.
           mesh.visual = trimesh.visual.TextureVisuals(uv=new_uvs, material=material)
@@ -282,11 +285,16 @@ def create_primitive_mesh(mj_model: mujoco.MjModel, geom_id: int) -> trimesh.Tri
   geom_type = mj_model.geom_type[geom_id]
   rgba = mj_model.geom_rgba[geom_id].copy()
 
-  material = trimesh.visual.material.PBRMaterial(  # type: ignore
-    baseColorFactor=rgba,
-    metallicFactor=0.0,
-    roughnessFactor=1.0,
-  )
+  # Enable alpha blending if transparency is specified
+  material_kwargs = {
+    "baseColorFactor": rgba,
+    "metallicFactor": 0.0,
+    "roughnessFactor": 1.0,
+  }
+  if rgba[3] < 1.0:
+    material_kwargs["alphaMode"] = "BLEND"
+
+  material = trimesh.visual.material.PBRMaterial(**material_kwargs)  # type: ignore
 
   if geom_type == mjtGeom.mjGEOM_SPHERE:
     mesh = trimesh.creation.icosphere(radius=size[0], subdivisions=2)

@@ -6,6 +6,7 @@ import torch
 
 from mjlab.entity import Entity
 from mjlab.managers.scene_entity_config import SceneEntityCfg
+from mjlab.sensor import CameraSensor
 from mjlab.tasks.manipulation.mdp.commands import LiftingCommand
 from mjlab.utils.lab_api.math import quat_apply, quat_inv
 
@@ -46,3 +47,18 @@ def object_position_error(
   obj_pos_w = obj.data.root_link_pos_w
   position_error = command.target_pos - obj_pos_w
   return position_error
+
+
+def camera_rgb(
+  env: ManagerBasedRlEnv,
+  sensor_name: str,
+  normalize: bool = True,
+) -> torch.Tensor:
+  """Get RGB camera observation in CNN-compatible format (B, C, H, W)."""
+  sensor: CameraSensor = env.scene[sensor_name]
+  rgb_data = sensor.data.rgb
+  assert rgb_data is not None, f"Camera '{sensor_name}' has no RGB data"
+  rgb_data = rgb_data.permute(0, 3, 1, 2)
+  if normalize:
+    rgb_data = rgb_data.float() / 255.0
+  return rgb_data
