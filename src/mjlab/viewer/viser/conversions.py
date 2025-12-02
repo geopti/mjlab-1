@@ -16,12 +16,12 @@ def mujoco_mesh_to_trimesh(
   """Convert a MuJoCo mesh geometry to a trimesh with textures if available.
 
   Args:
-      mj_model: MuJoCo model object
-      geom_idx: Index of the geometry in the model
-      verbose: If True, print debug information during conversion
+    mj_model: MuJoCo model object
+    geom_idx: Index of the geometry in the model
+    verbose: If True, print debug information during conversion
 
   Returns:
-      A trimesh object with texture/material applied if available
+    A trimesh object with texture/material applied if available
   """
 
   # Get the mesh ID for this geometry.
@@ -435,10 +435,15 @@ def rotation_matrix_from_vectors(
 
 
 def is_fixed_body(mj_model: mujoco.MjModel, body_id: int) -> bool:
-  """Check if a body is fixed (welded to world)."""
-  if mj_model.body_mocapid[body_id] >= 0:
-    return False
-  return mj_model.body_weldid[body_id] == 0
+  """Check if a body is fixed (welded to world and not attached to mocap).
+
+  A body is considered fixed if it's welded to world AND its kinematic root
+  is not a mocap body. This ensures bodies attached to mocap bodies move with them.
+  """
+  is_weld = mj_model.body_weldid[body_id] == 0
+  root_id = mj_model.body_rootid[body_id]
+  root_is_mocap = mj_model.body_mocapid[root_id] >= 0
+  return is_weld and not root_is_mocap
 
 
 def get_body_name(mj_model: mujoco.MjModel, body_id: int) -> str:
