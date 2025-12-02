@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
@@ -17,8 +15,6 @@ _SCENE_XML = Path(__file__).parent / "scene.xml"
 
 @dataclass(kw_only=True)
 class SceneCfg:
-  """Configuration for the scene."""
-
   num_envs: int = 1
   env_spacing: float = 2.0
   terrain: TerrainImporterCfg | None = None
@@ -57,7 +53,7 @@ class Scene:
     to the compiler directive in the XML.
 
     Args:
-        path: Output path for the zip file.
+      path: Output path for the zip file.
 
     TODO: Verify if this is fixed in future MuJoCo releases.
     """

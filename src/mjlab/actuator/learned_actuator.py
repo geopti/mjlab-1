@@ -123,7 +123,7 @@ class LearnedMlpActuator(DcMotorActuator[LearnedMlpActuatorCfg]):
     """Reset history buffers for specified environments.
 
     Args:
-        env_ids: Environment indices to reset. If None, reset all environments.
+      env_ids: Environment indices to reset. If None, reset all environments.
     """
     assert self._pos_error_history is not None
     assert self._vel_history is not None
@@ -145,10 +145,10 @@ class LearnedMlpActuator(DcMotorActuator[LearnedMlpActuatorCfg]):
     """Compute actuator torques using the learned MLP model.
 
     Args:
-        cmd: High-level actuator command containing targets and current state.
+      cmd: High-level actuator command containing targets and current state.
 
     Returns:
-        Computed torque tensor of shape (num_envs, num_joints).
+      Computed torque tensor of shape (num_envs, num_joints).
     """
     assert self.network is not None
     assert self._pos_error_history is not None

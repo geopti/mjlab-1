@@ -4,8 +4,8 @@ This module provides terrain generation functionality using heightfields,
 adapted from the IsaacLab terrain generation system.
 
 References:
-    IsaacLab mesh terrain implementation:
-    https://github.com/isaac-sim/IsaacLab/blob/main/source/isaaclab/isaaclab/terrains/height_field/hf_terrains.py
+  IsaacLab mesh terrain implementation:
+  https://github.com/isaac-sim/IsaacLab/blob/main/source/isaaclab/isaaclab/terrains/height_field/hf_terrains.py
 """
 
 import uuid
@@ -102,8 +102,6 @@ def color_by_height(
 
 @dataclass(kw_only=True)
 class HfPyramidSlopedTerrainCfg(SubTerrainCfg):
-  """Configuration for the hf pyramid sloped terrain."""
-
   slope_range: tuple[float, float]
   platform_width: float = 1.0
   inverted: bool = False
@@ -256,8 +254,6 @@ class HfPyramidSlopedTerrainCfg(SubTerrainCfg):
 
 @dataclass(kw_only=True)
 class HfRandomUniformTerrainCfg(SubTerrainCfg):
-  """Configuration for the hf random uniform terrain."""
-
   noise_range: tuple[float, float]
   noise_step: float = 0.005
   downsampled_scale: float | None = None
@@ -394,8 +390,6 @@ class HfRandomUniformTerrainCfg(SubTerrainCfg):
 
 @dataclass(kw_only=True)
 class HfWaveTerrainCfg(SubTerrainCfg):
-  """Configuration for the hf wave terrain."""
-
   amplitude_range: tuple[float, float]
   num_waves: float = 1.0
   horizontal_scale: float = 0.1

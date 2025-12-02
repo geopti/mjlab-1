@@ -77,11 +77,11 @@ def reset_root_state_uniform(
   For fixed-base mocap entities: Resets pose only via write_mocap_pose_to_sim().
 
   Args:
-      env: The environment.
-      env_ids: Environment IDs to reset. If None, resets all environments.
-      pose_range: Dictionary with keys {"x", "y", "z", "roll", "pitch", "yaw"}.
-      velocity_range: Velocity range (only used for floating-base entities).
-      asset_cfg: Asset configuration.
+    env: The environment.
+    env_ids: Environment IDs to reset. If None, resets all environments.
+    pose_range: Dictionary with keys {"x", "y", "z", "roll", "pitch", "yaw"}.
+    velocity_range: Velocity range (only used for floating-base entities).
+    asset_cfg: Asset configuration.
   """
   if env_ids is None:
     env_ids = torch.arange(env.num_envs, device=env.device, dtype=torch.int)
@@ -288,14 +288,14 @@ def randomize_field(
   """Unified model randomization function.
 
   Args:
-      env: The environment.
-      env_ids: Environment IDs to randomize.
-      field: Field name (e.g., "geom_friction", "body_mass").
-      ranges: Either (min, max) for all axes, or {axis: (min, max)} for specific axes.
-      distribution: Distribution type.
-      operation: How to apply randomization.
-      asset_cfg: Asset configuration.
-      axes: Specific axes to randomize (overrides default_axes from field spec).
+    env: The environment.
+    env_ids: Environment IDs to randomize.
+    field: Field name (e.g., "geom_friction", "body_mass").
+    ranges: Either (min, max) for all axes, or {axis: (min, max)} for specific axes.
+    distribution: Distribution type.
+    operation: How to apply randomization.
+    asset_cfg: Asset configuration.
+    axes: Specific axes to randomize (overrides default_axes from field spec).
   """
   if field not in FIELD_SPECS:
     raise ValueError(
@@ -493,13 +493,13 @@ def randomize_pd_gains(
   """Randomize PD stiffness and damping gains.
 
   Args:
-      env: The environment.
-      env_ids: Environment IDs to randomize. If None, randomizes all environments.
-      kp_range: (min, max) for proportional gain randomization.
-      kd_range: (min, max) for derivative gain randomization.
-      asset_cfg: Asset configuration specifying which entity and actuators.
-      distribution: Distribution type ("uniform" or "log_uniform").
-      operation: "scale" multiplies existing gains, "abs" sets absolute values.
+    env: The environment.
+    env_ids: Environment IDs to randomize. If None, randomizes all environments.
+    kp_range: (min, max) for proportional gain randomization.
+    kd_range: (min, max) for derivative gain randomization.
+    asset_cfg: Asset configuration specifying which entity and actuators.
+    distribution: Distribution type ("uniform" or "log_uniform").
+    operation: "scale" multiplies existing gains, "abs" sets absolute values.
   """
   from mjlab.actuator import (
     BuiltinPositionActuator,
@@ -577,12 +577,12 @@ def randomize_effort_limits(
   """Randomize actuator effort limits.
 
   Args:
-      env: The environment.
-      env_ids: Environment IDs to randomize. If None, randomizes all environments.
-      effort_limit_range: (min, max) for effort limit randomization.
-      asset_cfg: Asset configuration specifying which entity and actuators.
-      distribution: Distribution type ("uniform" or "log_uniform").
-      operation: "scale" multiplies existing limits, "abs" sets absolute values.
+    env: The environment.
+    env_ids: Environment IDs to randomize. If None, randomizes all environments.
+    effort_limit_range: (min, max) for effort limit randomization.
+    asset_cfg: Asset configuration specifying which entity and actuators.
+    distribution: Distribution type ("uniform" or "log_uniform").
+    operation: "scale" multiplies existing limits, "abs" sets absolute values.
   """
   from mjlab.actuator import (
     BuiltinPositionActuator,

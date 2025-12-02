@@ -158,12 +158,12 @@ class ViserMujocoScene(DebugVisualizer):
     lazily when first needed.
 
     Args:
-        server: Viser server instance.
-        mj_model: MuJoCo model.
-        num_envs: Number of parallel environments.
+      server: Viser server instance.
+      mj_model: MuJoCo model.
+      num_envs: Number of parallel environments.
 
     Returns:
-        ViserMujocoScene instance with scene populated.
+      ViserMujocoScene instance with scene populated.
     """
     mj_data = mujoco.MjData(mj_model)
 
@@ -233,10 +233,10 @@ class ViserMujocoScene(DebugVisualizer):
     """Add standard GUI controls that automatically update this scene's settings.
 
     Args:
-        camera_distance: Default camera distance from tracked body when tracking is enabled.
-        camera_azimuth: Default camera azimuth angle in degrees.
-        camera_elevation: Default camera elevation angle in degrees.
-        show_debug_viz_control: Whether to show the debug visualization checkbox.
+      camera_distance: Default camera distance from tracked body when tracking is enabled.
+      camera_azimuth: Default camera azimuth angle in degrees.
+      camera_elevation: Default camera elevation angle in degrees.
+      show_debug_viz_control: Whether to show the debug visualization checkbox.
     """
     with self.server.gui.add_folder("Visualization"):
       slider_fov = self.server.gui.add_slider(
@@ -401,7 +401,7 @@ class ViserMujocoScene(DebugVisualizer):
     """Add geom groups tab to the given tab group.
 
     Args:
-        tabs: The viser tab group to add the geom groups tab to.
+      tabs: The viser tab group to add the geom groups tab to.
     """
     with tabs.add_tab("Geoms", icon=viser.Icon.EYE):
       for i in range(6):
@@ -421,8 +421,8 @@ class ViserMujocoScene(DebugVisualizer):
     """Update scene from batched simulation data.
 
     Args:
-        wp_data: Batched Warp simulation data (mjwarp.Data).
-        env_idx: Environment index to visualize. If None, uses self.env_idx.
+      wp_data: Batched Warp simulation data (mjwarp.Data).
+      env_idx: Environment index to visualize. If None, uses self.env_idx.
     """
     if env_idx is None:
       env_idx = self.env_idx
@@ -460,7 +460,7 @@ class ViserMujocoScene(DebugVisualizer):
     """Update scene from single-environment MuJoCo data.
 
     Args:
-        mj_data: Single environment MuJoCo data.
+      mj_data: Single environment MuJoCo data.
     """
     body_xpos = mj_data.xpos[None, ...]
     body_xmat = mj_data.xmat.reshape(-1, 3, 3)[None, ...]
@@ -925,10 +925,10 @@ class ViserMujocoScene(DebugVisualizer):
     For Viser, we create meshes once and update their poses for efficiency.
 
     Args:
-        qpos: Joint positions for the ghost pose
-        model: MuJoCo model with pre-configured appearance (geom_rgba for colors)
-        alpha: Transparency override
-        label: Optional label for this ghost
+      qpos: Joint positions for the ghost pose
+      model: MuJoCo model with pre-configured appearance (geom_rgba for colors)
+      alpha: Transparency override
+      label: Optional label for this ghost
     """
     if not self.debug_visualization_enabled:
       return
@@ -1035,16 +1035,16 @@ class ViserMujocoScene(DebugVisualizer):
     This implementation reuses add_arrow to draw the three axis arrows.
 
     Args:
-        position: Position of the frame origin (3D vector)
-        rotation_matrix: Rotation matrix (3x3)
-        scale: Scale/length of the axis arrows
-        label: Optional label for this frame.
-        axis_radius: Radius of the axis arrows.
-        alpha: Opacity for all axes (0=transparent, 1=opaque). Note: This implementation
-            does not support per-arrow transparency. All arrows in the scene will share
-            the same alpha value.
-        axis_colors: Optional tuple of 3 RGB colors for X, Y, Z axes. If None, uses
-            default RGB coloring (X=red, Y=green, Z=blue).
+      position: Position of the frame origin (3D vector)
+      rotation_matrix: Rotation matrix (3x3)
+      scale: Scale/length of the axis arrows
+      label: Optional label for this frame.
+      axis_radius: Radius of the axis arrows.
+      alpha: Opacity for all axes (0=transparent, 1=opaque). Note: This implementation
+        does not support per-arrow transparency. All arrows in the scene will share
+        the same alpha value.
+      axis_colors: Optional tuple of 3 RGB colors for X, Y, Z axes. If None, uses
+        default RGB coloring (X=red, Y=green, Z=blue).
     """
     if not self.debug_visualization_enabled:
       return
@@ -1181,11 +1181,11 @@ class ViserMujocoScene(DebugVisualizer):
     """Create a trimesh from a MuJoCo geom using the specified model.
 
     Args:
-        mj_model: MuJoCo model containing geom definition
-        geom_id: Index of the geom to create mesh for
+      mj_model: MuJoCo model containing geom definition
+      geom_id: Index of the geom to create mesh for
 
     Returns:
-        Trimesh representation of the geom, or None if unsupported type
+      Trimesh representation of the geom, or None if unsupported type
     """
     geom_type = mj_model.geom_type[geom_id]
 

@@ -25,11 +25,11 @@ def get_base_metadata(
   """Get base metadata common to all RL policy exports.
 
   Args:
-      env: The RL environment.
-      run_path: W&B run path or other identifier.
+    env: The RL environment.
+    run_path: W&B run path or other identifier.
 
   Returns:
-      Dictionary of metadata fields that are common across all tasks.
+    Dictionary of metadata fields that are common across all tasks.
   """
   robot: Entity = env.scene["robot"]
   joint_action = env.action_manager.get_term("joint_pos")
@@ -64,8 +64,8 @@ def attach_metadata_to_onnx(
   """Attach metadata to an ONNX model file.
 
   Args:
-      onnx_path: Path to the ONNX model file.
-      metadata: Dictionary of metadata key-value pairs to attach.
+    onnx_path: Path to the ONNX model file.
+    metadata: Dictionary of metadata key-value pairs to attach.
   """
   model = onnx.load(onnx_path)
 

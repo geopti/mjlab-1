@@ -37,13 +37,14 @@ class BuiltinActuatorGroup:
     """Register builtin actuators and pre-compute their mappings.
 
     Args:
-        actuators: List of initialized actuators to process.
+      actuators: List of initialized actuators to process.
 
     Returns:
-        A tuple containing:
-            - BuiltinActuatorGroup with pre-computed mappings.
-            - List of custom (non-builtin) actuators.
+      A tuple containing:
+        - BuiltinActuatorGroup with pre-computed mappings.
+        - List of custom (non-builtin) actuators.
     """
+
     builtin_groups: dict[type, list[Actuator]] = {}
     custom_actuators: list[Actuator] = []
 
@@ -68,7 +69,7 @@ class BuiltinActuatorGroup:
     """Write builtin actuator controls directly to simulation data.
 
     Args:
-        data: Entity data containing targets and control arrays.
+      data: Entity data containing targets and control arrays.
     """
     target_tensor_map = {
       BuiltinPositionActuator: data.joint_pos_target,

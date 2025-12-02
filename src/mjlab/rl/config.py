@@ -1,7 +1,5 @@
 """RSL-RL configuration."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from typing import Literal, Tuple
 
@@ -71,44 +69,33 @@ class RslRlPpoAlgorithmCfg:
 class RslRlBaseRunnerCfg:
   seed: int = 42
   """The seed for the experiment. Default is 42."""
-
   num_steps_per_env: int = 24
   """The number of steps per environment update."""
-
   max_iterations: int = 300
   """The maximum number of iterations."""
-
   obs_groups: dict[str, tuple[str, ...]] = field(
     default_factory=lambda: {"policy": ("policy",), "critic": ("critic",)},
   )
   save_interval: int = 50
   """The number of iterations between saves."""
-
   experiment_name: str = "exp1"
   """The experiment name."""
-
   run_name: str = ""
   """The run name. Default is empty string."""
-
   logger: Literal["wandb", "tensorboard"] = "wandb"
   """The logger to use. Default is wandb."""
-
   wandb_project: str = "mjlab"
   """The wandb project name."""
-
   resume: bool = False
   """Whether to resume the experiment. Default is False."""
-
   load_run: str = ".*"
-  """The run directory to load. Default is ``".*"`` which means all runs. If regex
+  """The run directory to load. Default is ".*" which means all runs. If regex
   expression, the latest (alphabetical order) matching run will be loaded.
   """
-
-  load_checkpoint: str = "model.*.pt"
-  """The checkpoint file to load. Default is ``"model.*.pt"`` (all). If regex expression,
+  load_checkpoint: str = "model_.*.pt"
+  """The checkpoint file to load. Default is "model_.*.pt" (all). If regex expression,
   the latest (alphabetical order) matching file will be loaded.
   """
-
   clip_actions: float | None = None
   """The clipping range for action values. If None (default), no clipping is applied."""
 
@@ -117,9 +104,7 @@ class RslRlBaseRunnerCfg:
 class RslRlOnPolicyRunnerCfg(RslRlBaseRunnerCfg):
   class_name: str = "OnPolicyRunner"
   """The runner class name. Default is OnPolicyRunner."""
-
   policy: RslRlPpoActorCriticCfg = field(default_factory=RslRlPpoActorCriticCfg)
   """The policy configuration."""
-
   algorithm: RslRlPpoAlgorithmCfg = field(default_factory=RslRlPpoAlgorithmCfg)
   """The algorithm configuration."""

@@ -70,23 +70,20 @@ class ContactSensorCfg(SensorCfg):
   Output shape: [B, N * num_slots] or [B, N * num_slots, 3] where N = # of primaries
 
   Fields (choose subset):
-
-  - found: 0=no contact, >0=match count before reduction
-  - force, torque: 3D vectors in contact frame (or global if reduce="netforce")
-  - dist: penetration depth
-  - pos, normal, tangent: 3D vectors in global frame (normal: primary→secondary)
+    - found: 0=no contact, >0=match count before reduction
+    - force, torque: 3D vectors in contact frame (or global if reduce="netforce")
+    - dist: penetration depth
+    - pos, normal, tangent: 3D vectors in global frame (normal: primary→secondary)
 
   Reduction modes (selects top num_slots from all matches):
-
-  - "none": fast, non-deterministic
-  - "mindist", "maxforce": closest/strongest contacts
-  - "netforce": sum all forces (global frame)
+    - "none": fast, non-deterministic
+    - "mindist", "maxforce": closest/strongest contacts
+    - "netforce": sum all forces (global frame)
 
   Policies:
-
-  - secondary_policy: "first", "any", or "error" when secondary matches multiple
-  - track_air_time: enables landing/takeoff detection
-  - global_frame: rotates force/torque to global (requires normal+tangent fields)
+    - secondary_policy: "first", "any", or "error" when secondary matches multiple
+    - track_air_time: enables landing/takeoff detection
+    - global_frame: rotates force/torque to global (requires normal+tangent fields)
   """
 
   primary: ContactMatch
@@ -130,34 +127,25 @@ class ContactData:
 
   found: torch.Tensor | None = None
   """[B, N] 0=no contact, >0=match count"""
-
   force: torch.Tensor | None = None
   """[B, N, 3] contact frame (global if reduce="netforce" or global_frame=True)"""
-
   torque: torch.Tensor | None = None
   """[B, N, 3] contact frame (global if reduce="netforce" or global_frame=True)"""
-
   dist: torch.Tensor | None = None
   """[B, N] penetration depth"""
-
   pos: torch.Tensor | None = None
   """[B, N, 3] global frame"""
-
   normal: torch.Tensor | None = None
   """[B, N, 3] global frame, primary→secondary"""
-
   tangent: torch.Tensor | None = None
   """[B, N, 3] global frame"""
 
   current_air_time: torch.Tensor | None = None
   """[B, N] time in air (if track_air_time=True)"""
-
   last_air_time: torch.Tensor | None = None
   """[B, N] duration of last air phase (if track_air_time=True)"""
-
   current_contact_time: torch.Tensor | None = None
   """[B, N] time in contact (if track_air_time=True)"""
-
   last_contact_time: torch.Tensor | None = None
   """[B, N] duration of last contact phase (if track_air_time=True)"""
 
