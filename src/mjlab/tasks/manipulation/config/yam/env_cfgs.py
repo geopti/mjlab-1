@@ -120,6 +120,10 @@ def yam_lift_cube_vision_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         func=manipulation_mdp.camera_rgb,
         params={"sensor_name": "wrist_camera", "normalize": True},
       ),
+      "front_camera_rgb": ObservationTermCfg(
+        func=manipulation_mdp.camera_rgb,
+        params={"sensor_name": "front_camera", "normalize": True},
+      ),
     },
     enable_corruption=False,
     concatenate_terms=True,
