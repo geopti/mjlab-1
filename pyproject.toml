@@ -36,7 +36,7 @@ dependencies = [
     "tyro>=0.10.0a6",
     "torch>=2.7.0",
     "torchrunx>=0.3.4",
-    "warp-lang==1.11.0.dev20251115",
+    "warp-lang>=1.11.0.dev0",
     "mujoco-warp",
     "mujoco<=3.3.8",
     "trimesh>=4.8.3",
