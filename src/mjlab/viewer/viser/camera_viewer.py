@@ -69,7 +69,7 @@ class ViserCameraViewer:
 
     if self._has_depth and self._depth_handle is not None and data.depth is not None:
       depth_np = data.depth[env_idx].squeeze().cpu().numpy()
-      depth_scale = 5.0
+      depth_scale = 1.0
       depth_normalized = np.clip(depth_np / depth_scale, 0.0, 1.0)
       depth_uint8 = (depth_normalized * 255).astype(np.uint8)
       self._depth_handle.image = depth_uint8

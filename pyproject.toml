@@ -127,7 +127,7 @@ ignore = ["B011"]
 
 [tool.pyright]
 pythonVersion = "3.10"
-ignore = ["./typings", "./src/mjlab/utils/lab_api"]
+ignore = ["./typings", "./src/mjlab/utils/lab_api", "./scripts/benchmarks"]
 stubPath = "typings"
 
 [tool.ty.environment]
@@ -135,7 +135,7 @@ extra-paths = ["typings"]
 
 [tool.ty.src]
 include = ["src", "tests", "scripts"]
-exclude = ["src/mjlab/utils/lab_api", "typings"]
+exclude = ["src/mjlab/utils/lab_api", "typings", "scripts/benchmarks"]
 
 [tool.pytest.ini_options]
 markers = [

@@ -7,11 +7,15 @@ from mjlab.asset_zoo.robots import (
 from mjlab.entity import EntityCfg
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs.mdp.actions import JointPositionActionCfg
-from mjlab.managers.manager_term_config import ObservationGroupCfg, ObservationTermCfg
+from mjlab.managers.manager_term_config import (
+  ObservationGroupCfg,
+  ObservationTermCfg,
+)
 from mjlab.sensor import CameraSensorCfg, ContactSensorCfg
 from mjlab.tasks.manipulation import mdp as manipulation_mdp
 from mjlab.tasks.manipulation.lift_cube_env_cfg import make_lift_cube_env_cfg
 from mjlab.tasks.manipulation.mdp import LiftingCommandCfg
+from mjlab.utils.noise import UniformNoiseCfg as Unoise
 
 
 def get_cube_spec(cube_size: float = 0.02, mass: float = 0.05) -> mujoco.MjSpec:
@@ -28,7 +32,7 @@ def get_cube_spec(cube_size: float = 0.02, mass: float = 0.05) -> mujoco.MjSpec:
   return spec
 
 
-def get_goal_spec(radius: float = 0.03) -> mujoco.MjSpec:
+def get_goal_spec(radius: float = 0.02) -> mujoco.MjSpec:
   spec = mujoco.MjSpec()
   body = spec.worldbody.add_body(name="goal", mocap=True)
   body.add_geom(
@@ -38,6 +42,7 @@ def get_goal_spec(radius: float = 0.03) -> mujoco.MjSpec:
     rgba=(1.0, 0.5, 0.0, 0.3),
     contype=0,
     conaffinity=0,
+    # group=4,
   )
   return spec
 
@@ -94,39 +99,33 @@ def yam_lift_cube_env_cfg(
 def yam_lift_cube_vision_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   cfg = yam_lift_cube_env_cfg(play=play)
 
-  # Add camera sensor.
-  wrist_camera_cfg = CameraSensorCfg(
-    name="wrist_camera",
-    camera_name="robot/camera_d405",
+  cam_kwargs = dict(
     width=64,
     height=64,
     type=("rgb",),
-    update_period=0.04,  # 25 Hz.
+    enabled_geom_groups=(0, 3),
+    use_shadows=False,
+    use_textures=True,
   )
-  front_camera_cfg = CameraSensorCfg(
-    name="front_camera",
-    camera_name="robot/front_cam",
-    width=64,
-    height=64,
-    type=("rgb",),
-    update_period=0.04,  # 25 Hz.
-  )
-  cfg.scene.sensors = (cfg.scene.sensors or ()) + (wrist_camera_cfg, front_camera_cfg)
+  camera_names = [
+    "robot/camera_d405",
+    "robot/front_cam",
+  ]
+  cam_terms = {}
+  for cam_name in camera_names:
+    cam_cfg = CameraSensorCfg(
+      name=cam_name.split("/")[-1],
+      camera_name=cam_name,
+      **cam_kwargs,  # type: ignore
+    )
+    cfg.scene.sensors = (cfg.scene.sensors or ()) + (cam_cfg,)
+    cam_terms[f"{cam_name.split('/')[-1]}_rgb"] = ObservationTermCfg(
+      func=manipulation_mdp.camera_rgb,
+      params={"sensor_name": cam_cfg.name},
+    )
 
-  # Add camera observation group.
   camera_obs = ObservationGroupCfg(
-    {
-      "camera_rgb": ObservationTermCfg(
-        func=manipulation_mdp.camera_rgb,
-        params={"sensor_name": "wrist_camera", "normalize": True},
-      ),
-      "front_camera_rgb": ObservationTermCfg(
-        func=manipulation_mdp.camera_rgb,
-        params={"sensor_name": "front_camera", "normalize": True},
-      ),
-    },
-    enable_corruption=False,
-    concatenate_terms=True,
+    terms=cam_terms, enable_corruption=False, concatenate_terms=True
   )
   cfg.observations["camera"] = camera_obs
 
@@ -134,5 +133,24 @@ def yam_lift_cube_vision_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   policy_obs = cfg.observations["policy"]
   policy_obs.terms.pop("ee_to_cube")
   policy_obs.terms.pop("cube_to_goal")
+
+  # Add ee_position and goal_position to policy observations.
+  policy_obs.terms["ee_position"] = ObservationTermCfg(
+    func=manipulation_mdp.ee_position,
+    params={
+      "asset_cfg": manipulation_mdp.SceneEntityCfg(
+        name="robot",
+        site_names=("grasp_site",),
+      ),
+    },
+    noise=Unoise(n_min=-0.01, n_max=0.01),
+  )
+  # NOTE: No noise for goal position.
+  policy_obs.terms["goal_position"] = ObservationTermCfg(
+    func=manipulation_mdp.target_position,
+    params={"command_name": "lift_height"},
+  )
+
+  cfg.curriculum = None
 
   return cfg

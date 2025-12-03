@@ -38,12 +38,13 @@ def yam_lift_cube_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
 
 def yam_lift_cube_vision_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
   cnn_cfg = {
-    "output_channels": [16, 32, 32],
-    "kernel_size": [8, 4, 3],
-    "stride": [4, 2, 1],
+    "output_channels": [16, 32],
+    "kernel_size": [5, 3],
+    "stride": [2, 2],
     "padding": "zeros",
     "activation": "elu",
-    "flatten": True,
+    "max_pool": False,
+    "global_pool": "avg",
   }
   return RslRlOnPolicyRunnerCfg(
     policy=RslRlPpoActorCriticCfg(

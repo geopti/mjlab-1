@@ -32,6 +32,18 @@ def ee_to_object_distance(
   return distance_vec_b
 
 
+def ee_position(
+  env: ManagerBasedRlEnv,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Position of end effector in robot base frame."""
+  robot: Entity = env.scene[asset_cfg.name]
+  ee_pos_w = robot.data.site_pos_w[:, asset_cfg.site_ids].squeeze(1)
+  base_quat_w = robot.data.root_link_quat_w
+  ee_pos_b = quat_apply(quat_inv(base_quat_w), ee_pos_w)
+  return ee_pos_b
+
+
 def object_position_error(
   env: ManagerBasedRlEnv,
   object_name: str,
@@ -49,6 +61,19 @@ def object_position_error(
   return position_error
 
 
+def target_position(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+) -> torch.Tensor:
+  """Get target position from a LiftingCommand."""
+  command = env.command_manager.get_term(command_name)
+  if not isinstance(command, LiftingCommand):
+    raise TypeError(
+      f"Command '{command_name}' must be a LiftingCommand, got {type(command)}"
+    )
+  return command.target_pos
+
+
 def camera_rgb(
   env: ManagerBasedRlEnv,
   sensor_name: str,
@@ -56,9 +81,26 @@ def camera_rgb(
 ) -> torch.Tensor:
   """Get RGB camera observation in CNN-compatible format (B, C, H, W)."""
   sensor: CameraSensor = env.scene[sensor_name]
-  rgb_data = sensor.data.rgb
+  rgb_data = sensor.data.rgb  # (B, H, W, 3)
   assert rgb_data is not None, f"Camera '{sensor_name}' has no RGB data"
-  rgb_data = rgb_data.permute(0, 3, 1, 2)
+  rgb_data = rgb_data.permute(0, 3, 1, 2)  # (B, 3, H, W)
   if normalize:
     rgb_data = rgb_data.float() / 255.0
   return rgb_data
+
+
+def camera_depth(
+  env: ManagerBasedRlEnv,
+  sensor_name: str,
+  cutoff_distance: float,
+  normalize: bool = True,
+) -> torch.Tensor:
+  """Get depth camera observation in CNN-compatible format (B, 1, H, W)."""
+  sensor: CameraSensor = env.scene[sensor_name]
+  depth_data = sensor.data.depth  # (B, H, W, 1)
+  assert depth_data is not None, f"Camera '{sensor_name}' has no depth data"
+  depth_data = depth_data.permute(0, 3, 1, 2)  # (B, 1, H, W)
+  depth_data_clipped = torch.clamp(depth_data, min=0.0, max=cutoff_distance)
+  if normalize:
+    return torch.clip(depth_data_clipped / cutoff_distance, 0.0, 1.0)
+  return depth_data_clipped
