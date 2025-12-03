@@ -1535,7 +1535,7 @@ requires-dist = [
     { name = "mujoco-warp", editable = "../mujoco_warp" },
     { name = "onnxscript", specifier = ">=0.5.4" },
     { name = "prettytable" },
-    { name = "rsl-rl-lib", editable = "../rsl_rl" },
+    { name = "rsl-rl-lib", specifier = ">=3.2.0" },
     { name = "tensorboard", specifier = ">=2.20.0" },
     { name = "tensordict" },
     { name = "torch", specifier = ">=2.7.0" },
@@ -2911,7 +2911,7 @@ wheels = [
 [[package]]
 name = "rsl-rl-lib"
 version = "3.2.0"
-source = { editable = "../rsl_rl" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "gitpython" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -2923,16 +2923,9 @@ dependencies = [
     { name = "torch", version = "2.9.1+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "sys_platform != 'darwin'" },
     { name = "torchvision" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "gitpython" },
-    { name = "numpy", specifier = ">=1.16.4" },
-    { name = "onnx" },
-    { name = "onnxscript", specifier = ">=0.5.4" },
-    { name = "tensordict", specifier = ">=0.7.0" },
-    { name = "torch", specifier = ">=2.6.0" },
-    { name = "torchvision", specifier = ">=0.5.0" },
+sdist = { url = "https://files.pythonhosted.org/packages/e7/90/4a06e879f888bdabc2d9e782e15350b20d35c7928cfdda9e45a2d0acfab8/rsl_rl_lib-3.2.0.tar.gz", hash = "sha256:d1f23097921e230274e02c837a6b6f8af2ee81e087762e8b77ffa3fbd32dd0de", size = 38869, upload-time = "2025-11-28T16:23:35.16Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d8/fd/11d5b88be193493c53b4633732eb628e49b9f802efbaf3350c3265c61abf/rsl_rl_lib-3.2.0-py3-none-any.whl", hash = "sha256:5e822900d1cccf3f7fc02875bdb5612388785b8de5f9c2a5a0074f3d8363859a", size = 55196, upload-time = "2025-11-28T16:23:34.123Z" },
 ]
 
 [[package]]

@@ -57,7 +57,6 @@ def yam_lift_cube_vision_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
       class_name="ActorCriticCNN",
       actor_cnn_cfg=cnn_cfg,
       critic_cnn_cfg=cnn_cfg,
-      shared_cnn_backbone=True,
     ),
     algorithm=RslRlPpoAlgorithmCfg(
       value_loss_coef=1.0,

@@ -15,13 +15,16 @@ if TYPE_CHECKING:
 
 CameraDataType = Literal["rgb", "depth"]
 
+# Default MuJoCo fov, in degrees.
+_DEFAULT_CAM_FOVY = 45.0
+
 
 @dataclass
 class CameraSensorCfg(SensorCfg):
   camera_name: str | None = None
   pos: tuple[float, float, float] = (0.0, 0.0, 1.0)
   quat: tuple[float, float, float, float] = (1.0, 0.0, 0.0, 0.0)
-  fovy: float = 45
+  fovy: float | None = None
   width: int = 160
   height: int = 120
   type: tuple[CameraDataType, ...] = ("rgb",)
@@ -72,13 +75,15 @@ class CameraSensor(Sensor[CameraSensorData]):
     del entities
 
     if self._is_wrapping_existing:
+      if self.cfg.fovy is not None:
+        scene_spec.camera(self._camera_name).fovy = self.cfg.fovy
       return
 
     scene_spec.worldbody.add_camera(
       name=self.cfg.name,
       pos=self.cfg.pos,
       quat=self.cfg.quat,
-      fovy=self.cfg.fovy,
+      fovy=self.cfg.fovy or _DEFAULT_CAM_FOVY,
     )
 
   def initialize(

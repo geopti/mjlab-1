@@ -105,6 +105,20 @@ class ViserPlayViewer(BaseViewer):
             self.increase_speed()
           self._update_status_display()
 
+      # Camera feeds: collect all camera sensors and add to controls tab.
+      camera_sensors = [
+        sensor
+        for sensor in self.env.unwrapped.scene.sensors.values()
+        if isinstance(sensor, CameraSensor)
+      ]
+      if camera_sensors:
+        with self._server.gui.add_folder("Camera Feeds"):
+          self._camera_viewers = [
+            ViserCameraViewer(self._server, sensor) for sensor in camera_sensors
+          ]
+      else:
+        self._camera_viewers = []
+
       # Add standard visualization options from ViserMujocoScene.
       self._scene.create_visualization_gui(
         camera_distance=self.cfg.distance,
@@ -125,22 +139,6 @@ class ViserPlayViewer(BaseViewer):
           )
         ]
         self._reward_plotter = ViserRewardPlotter(self._server, term_names)
-
-    # Camera tab - collect all camera sensors
-    camera_sensors = [
-      sensor
-      for sensor in self.env.unwrapped.scene.sensors.values()
-      if isinstance(sensor, CameraSensor)
-    ]
-
-    if camera_sensors:
-      with tabs.add_tab("Camera", icon=viser.Icon.CAMERA):
-        # Create a viewer for each camera sensor
-        self._camera_viewers = [
-          ViserCameraViewer(self._server, sensor) for sensor in camera_sensors
-        ]
-    else:
-      self._camera_viewers = []
 
     # Geom groups tab.
     self._scene.create_geom_groups_gui(tabs)

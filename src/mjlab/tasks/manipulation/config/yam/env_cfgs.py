@@ -93,15 +93,34 @@ def yam_lift_cube_env_cfg(
     cfg.episode_length_s = int(1e9)
     cfg.observations["policy"].enable_corruption = False
 
+    # Higher command resampling frequency for more dynamic play.
+    assert cfg.commands is not None
+    cfg.commands["lift_height"].resampling_time_range = (2.0, 3.0)
+
   return cfg
 
 
 def yam_lift_cube_vision_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   cfg = yam_lift_cube_env_cfg(play=play)
 
-  cam_kwargs = dict(
-    width=32,
-    height=32,
+  # Preserve aspect ratio of the D405 camera.
+  ar = 0.003896 / 0.00214
+  height = 32
+  width = int(height * ar)
+
+  cam_kwargs = {
+    "robot/camera_d405": {
+      "height": height,
+      "width": width,
+    },
+    "robot/front_cam": {
+      "width": 32,
+      "height": 32,
+      "fovy": 60,
+    },
+  }
+
+  shared_cam_kwargs = dict(
     type=("rgb",),
     enabled_geom_groups=(0, 3),
     use_shadows=False,
@@ -116,7 +135,8 @@ def yam_lift_cube_vision_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     cam_cfg = CameraSensorCfg(
       name=cam_name.split("/")[-1],
       camera_name=cam_name,
-      **cam_kwargs,  # type: ignore
+      **cam_kwargs[cam_name],  # type: ignore
+      **shared_cam_kwargs,  # type: ignore
     )
     cfg.scene.sensors = (cfg.scene.sensors or ()) + (cam_cfg,)
     cam_terms[f"{cam_name.split('/')[-1]}_rgb"] = ObservationTermCfg(
