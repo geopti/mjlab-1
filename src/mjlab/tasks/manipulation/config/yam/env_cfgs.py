@@ -8,6 +8,7 @@ from mjlab.entity import EntityCfg
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs.mdp.actions import JointPositionActionCfg
 from mjlab.managers.manager_term_config import (
+  CurriculumTermCfg,
   ObservationGroupCfg,
   ObservationTermCfg,
 )
@@ -42,7 +43,6 @@ def get_goal_spec(radius: float = 0.02) -> mujoco.MjSpec:
     rgba=(1.0, 0.5, 0.0, 0.3),
     contype=0,
     conaffinity=0,
-    # group=4,
   )
   return spec
 
@@ -145,12 +145,24 @@ def yam_lift_cube_vision_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     },
     noise=Unoise(n_min=-0.01, n_max=0.01),
   )
-  # NOTE: No noise for goal position.
   policy_obs.terms["goal_position"] = ObservationTermCfg(
     func=manipulation_mdp.target_position,
     params={"command_name": "lift_height"},
+    # NOTE: No noise for goal position.
   )
 
-  cfg.curriculum = None
+  cfg.curriculum = {
+    "joint_vel_hinge_weight": CurriculumTermCfg(
+      func=manipulation_mdp.reward_weight,
+      params={
+        "reward_name": "joint_vel_hinge",
+        "weight_stages": [
+          {"step": 0, "weight": -0.01},
+          {"step": 2000 * 24, "weight": -0.1},
+          {"step": 3000 * 24, "weight": -1.0},
+        ],
+      },
+    ),
+  }
 
   return cfg
