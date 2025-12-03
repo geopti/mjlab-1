@@ -100,8 +100,8 @@ def yam_lift_cube_vision_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   cfg = yam_lift_cube_env_cfg(play=play)
 
   cam_kwargs = dict(
-    width=64,
-    height=64,
+    width=32,
+    height=32,
     type=("rgb",),
     enabled_geom_groups=(0, 3),
     use_shadows=False,

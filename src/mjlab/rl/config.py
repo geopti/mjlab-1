@@ -29,6 +29,10 @@ class RslRlPpoActorCriticCfg:
   stride, activation, flatten, etc. See rsl_rl.networks.cnn.CNNCfg."""
   critic_cnn_cfg: dict[str, Any] | None = None
   """CNN config for critic. Same structure as actor_cnn_cfg."""
+  shared_cnn_backbone: bool = False
+  """Whether to share the CNN backbone between actor and critic. Default is False.
+  When True, a single CNN processes visual observations for both actor and critic,
+  reducing parameters and potentially improving sample efficiency."""
 
 
 @dataclass
