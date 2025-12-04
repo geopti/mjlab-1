@@ -100,36 +100,36 @@ def yam_lift_cube_env_cfg(
   return cfg
 
 
-def yam_lift_cube_vision_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+def yam_lift_cube_vision_env_cfg(
+  play: bool = False,
+  use_wrist_camera: bool = True,
+  use_front_camera: bool = False,
+) -> ManagerBasedRlEnvCfg:
   cfg = yam_lift_cube_env_cfg(play=play)
 
-  # Preserve aspect ratio of the D405 camera.
-  ar = 0.003896 / 0.00214
-  height = 32
-  width = int(height * ar)
+  camera_names = []
+  if use_wrist_camera:
+    camera_names.append("robot/camera_d405")
+  if use_front_camera:
+    camera_names.append("robot/front_cam")
 
   cam_kwargs = {
     "robot/camera_d405": {
-      "height": height,
-      "width": width,
+      "height": 32,
+      "width": 32,
     },
     "robot/front_cam": {
       "width": 32,
       "height": 32,
-      "fovy": 60,
     },
   }
-
   shared_cam_kwargs = dict(
     type=("rgb",),
     enabled_geom_groups=(0, 3),
     use_shadows=False,
     use_textures=True,
   )
-  camera_names = [
-    "robot/camera_d405",
-    "robot/front_cam",
-  ]
+
   cam_terms = {}
   for cam_name in camera_names:
     cam_cfg = CameraSensorCfg(

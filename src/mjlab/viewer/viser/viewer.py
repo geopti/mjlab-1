@@ -168,7 +168,7 @@ class ViserPlayViewer(BaseViewer):
         self._reward_plotter.update(terms)
 
     # Update camera images (sensor update_period handles rate limiting)
-    if self._camera_viewers and not self._is_paused:
+    if self._camera_viewers and (not self._is_paused or self._needs_update):
       for camera_viewer in self._camera_viewers:
         camera_viewer.update(self._scene.env_idx)
 
