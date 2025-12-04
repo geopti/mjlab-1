@@ -95,7 +95,7 @@ def yam_lift_cube_env_cfg(
 
     # Higher command resampling frequency for more dynamic play.
     assert cfg.commands is not None
-    cfg.commands["lift_height"].resampling_time_range = (2.0, 3.0)
+    cfg.commands["lift_height"].resampling_time_range = (4.0, 4.0)
 
   return cfg
 
@@ -184,5 +184,7 @@ def yam_lift_cube_vision_env_cfg(
       },
     ),
   }
+
+  cfg.rewards["action_rate_l2"].weight = -0.1
 
   return cfg

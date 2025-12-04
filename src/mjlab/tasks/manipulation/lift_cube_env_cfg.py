@@ -180,7 +180,7 @@ def make_lift_cube_env_cfg() -> ManagerBasedRlEnvCfg:
         "std": 0.05,
       },
     ),
-    "action_rate_l2": RewardTermCfg(func=mdp.action_rate_l2, weight=-0.1),
+    "action_rate_l2": RewardTermCfg(func=mdp.action_rate_l2, weight=-0.01),
     "joint_pos_limits": RewardTermCfg(
       func=mdp.joint_pos_limits,
       weight=-10.0,
