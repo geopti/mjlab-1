@@ -78,6 +78,6 @@ def yam_lift_cube_vision_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
     max_iterations=5_000,
     obs_groups={
       "policy": ("policy", "camera"),
-      "critic": ("policy", "critic", "camera"),
+      "critic": ("critic", "camera"),
     },
   )

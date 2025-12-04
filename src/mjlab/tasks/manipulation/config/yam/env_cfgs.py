@@ -185,6 +185,4 @@ def yam_lift_cube_vision_env_cfg(
     ),
   }
 
-  cfg.rewards["action_rate_l2"].weight = -0.1
-
   return cfg
