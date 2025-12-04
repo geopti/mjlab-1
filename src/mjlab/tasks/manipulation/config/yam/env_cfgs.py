@@ -43,6 +43,7 @@ def get_goal_spec(radius: float = 0.02) -> mujoco.MjSpec:
     rgba=(1.0, 0.5, 0.0, 0.3),
     contype=0,
     conaffinity=0,
+    group=4,  # Won't show up in camera obs.
   )
   return spec
 

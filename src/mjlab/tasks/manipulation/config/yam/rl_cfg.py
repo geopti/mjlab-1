@@ -32,7 +32,7 @@ def yam_lift_cube_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
     experiment_name="yam_lift_cube",
     save_interval=100,
     num_steps_per_env=24,
-    max_iterations=5_000,
+    max_iterations=2_000,
   )
 
 
