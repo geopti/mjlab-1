@@ -47,6 +47,7 @@ def make_lift_cube_env_cfg() -> ManagerBasedRlEnvCfg:
       params={
         "object_name": "cube",
         "command_name": "lift_height",
+        "asset_cfg": SceneEntityCfg("robot", site_names=()),  # Set per-robot.
       },
       noise=Unoise(n_min=-0.01, n_max=0.01),
     ),

@@ -12,11 +12,11 @@ from mjlab.managers.manager_term_config import (
   ObservationGroupCfg,
   ObservationTermCfg,
 )
+from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.sensor import CameraSensorCfg, ContactSensorCfg
 from mjlab.tasks.manipulation import mdp as manipulation_mdp
 from mjlab.tasks.manipulation.lift_cube_env_cfg import make_lift_cube_env_cfg
 from mjlab.tasks.manipulation.mdp import LiftingCommandCfg
-from mjlab.utils.noise import UniformNoiseCfg as Unoise
 
 
 def get_cube_spec(cube_size: float = 0.02, mass: float = 0.05) -> mujoco.MjSpec:
@@ -69,6 +69,9 @@ def yam_lift_cube_env_cfg(
   lift_command.goal_entity_name = "goal"
 
   cfg.observations["policy"].terms["ee_to_cube"].params["asset_cfg"].site_names = (
+    "grasp_site",
+  )
+  cfg.observations["policy"].terms["cube_to_goal"].params["asset_cfg"].site_names = (
     "grasp_site",
   )
   cfg.rewards["lift"].params["asset_cfg"].site_names = ("grasp_site",)
@@ -155,20 +158,13 @@ def yam_lift_cube_vision_env_cfg(
   policy_obs.terms.pop("ee_to_cube")
   policy_obs.terms.pop("cube_to_goal")
 
-  # Add ee_position and goal_position to policy observations.
-  policy_obs.terms["ee_position"] = ObservationTermCfg(
-    func=manipulation_mdp.ee_position,
-    params={
-      "asset_cfg": manipulation_mdp.SceneEntityCfg(
-        name="robot",
-        site_names=("grasp_site",),
-      ),
-    },
-    noise=Unoise(n_min=-0.01, n_max=0.01),
-  )
+  # Add goal_position to policy observations.
   policy_obs.terms["goal_position"] = ObservationTermCfg(
     func=manipulation_mdp.target_position,
-    params={"command_name": "lift_height"},
+    params={
+      "command_name": "lift_height",
+      "asset_cfg": SceneEntityCfg("robot", site_names=("grasp_site",)),
+    },
     # NOTE: No noise for goal position.
   )
 
@@ -179,8 +175,8 @@ def yam_lift_cube_vision_env_cfg(
         "reward_name": "joint_vel_hinge",
         "weight_stages": [
           {"step": 0, "weight": -0.01},
-          {"step": 2000 * 24, "weight": -0.1},
-          {"step": 3000 * 24, "weight": -1.0},
+          {"step": 1000 * 24, "weight": -0.1},
+          {"step": 2000 * 24, "weight": -1.0},
         ],
       },
     ),
