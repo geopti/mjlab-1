@@ -101,7 +101,7 @@ class RenderManager:
         mjm=mj_model,
         m=model.struct,  # type: ignore
         d=data.struct,  # type: ignore
-        cam_resolutions=camera_resolutions,
+        cam_res=camera_resolutions,
         render_rgb=render_rgb,
         render_depth=render_depth,
         use_textures=use_textures,
