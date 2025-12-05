@@ -44,7 +44,9 @@ def yam_lift_cube_vision_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
     "padding": "zeros",
     "activation": "elu",
     "max_pool": False,
-    "global_pool": "avg",
+    "global_pool": "none",
+    "spatial_softmax": True,
+    "spatial_softmax_temperature": 1.0,
   }
   return RslRlOnPolicyRunnerCfg(
     policy=RslRlPpoActorCriticCfg(

@@ -1,3 +1,5 @@
+from typing import Any, Literal
+
 import mujoco
 
 from mjlab.asset_zoo.robots import (
@@ -8,7 +10,6 @@ from mjlab.entity import EntityCfg
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs.mdp.actions import JointPositionActionCfg
 from mjlab.managers.manager_term_config import (
-  CurriculumTermCfg,
   ObservationGroupCfg,
   ObservationTermCfg,
 )
@@ -71,9 +72,6 @@ def yam_lift_cube_env_cfg(
   cfg.observations["policy"].terms["ee_to_cube"].params["asset_cfg"].site_names = (
     "grasp_site",
   )
-  cfg.observations["policy"].terms["cube_to_goal"].params["asset_cfg"].site_names = (
-    "grasp_site",
-  )
   cfg.rewards["lift"].params["asset_cfg"].site_names = ("grasp_site",)
 
   fingertip_geoms = r"[lr]f_down(6|7|8|9|10|11)_collision"
@@ -105,30 +103,20 @@ def yam_lift_cube_env_cfg(
 
 
 def yam_lift_cube_vision_env_cfg(
+  cam_type: Literal["rgb", "depth"],
   play: bool = False,
-  use_wrist_camera: bool = True,
-  use_front_camera: bool = False,
 ) -> ManagerBasedRlEnvCfg:
   cfg = yam_lift_cube_env_cfg(play=play)
 
-  camera_names = []
-  if use_wrist_camera:
-    camera_names.append("robot/camera_d405")
-  if use_front_camera:
-    camera_names.append("robot/front_cam")
-
+  camera_names = ["robot/camera_d405"]
   cam_kwargs = {
     "robot/camera_d405": {
       "height": 32,
       "width": 32,
     },
-    "robot/front_cam": {
-      "width": 32,
-      "height": 32,
-    },
   }
   shared_cam_kwargs = dict(
-    type=("rgb",),
+    type=(cam_type,),
     enabled_geom_groups=(0, 3),
     use_shadows=False,
     use_textures=True,
@@ -143,9 +131,14 @@ def yam_lift_cube_vision_env_cfg(
       **shared_cam_kwargs,  # type: ignore
     )
     cfg.scene.sensors = (cfg.scene.sensors or ()) + (cam_cfg,)
-    cam_terms[f"{cam_name.split('/')[-1]}_rgb"] = ObservationTermCfg(
-      func=manipulation_mdp.camera_rgb,
-      params={"sensor_name": cam_cfg.name},
+    param_kwargs: dict[str, Any] = {"sensor_name": cam_cfg.name}
+    if cam_type == "depth":
+      param_kwargs["cutoff_distance"] = 0.5
+      func = manipulation_mdp.camera_depth
+    else:
+      func = manipulation_mdp.camera_rgb
+    cam_terms[f"{cam_name.split('/')[-1]}_{cam_type}"] = ObservationTermCfg(
+      func=func, params=param_kwargs
     )
 
   camera_obs = ObservationGroupCfg(
@@ -167,19 +160,5 @@ def yam_lift_cube_vision_env_cfg(
     },
     # NOTE: No noise for goal position.
   )
-
-  cfg.curriculum = {
-    "joint_vel_hinge_weight": CurriculumTermCfg(
-      func=manipulation_mdp.reward_weight,
-      params={
-        "reward_name": "joint_vel_hinge",
-        "weight_stages": [
-          {"step": 0, "weight": -0.01},
-          {"step": 1000 * 24, "weight": -0.1},
-          {"step": 2000 * 24, "weight": -1.0},
-        ],
-      },
-    ),
-  }
 
   return cfg

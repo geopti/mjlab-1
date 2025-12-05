@@ -1532,10 +1532,10 @@ requires-dist = [
     { name = "matplotlib", specifier = ">=3.10.7" },
     { name = "moviepy" },
     { name = "mujoco", specifier = "<=3.3.8", index = "https://py.mujoco.org/" },
-    { name = "mujoco-warp", editable = "../mujoco_warp" },
+    { name = "mujoco-warp", git = "https://github.com/google-deepmind/mujoco_warp?rev=render" },
     { name = "onnxscript", specifier = ">=0.5.4" },
     { name = "prettytable" },
-    { name = "rsl-rl-lib", specifier = ">=3.2.0" },
+    { name = "rsl-rl-lib", git = "https://github.com/kevinzakka/rsl_rl?rev=spatial-softmax" },
     { name = "tensorboard", specifier = ">=2.20.0" },
     { name = "tensordict" },
     { name = "torch", specifier = ">=2.7.0" },
@@ -1703,7 +1703,7 @@ wheels = [
 [[package]]
 name = "mujoco-warp"
 version = "0.0.1"
-source = { editable = "../mujoco_warp" }
+source = { git = "https://github.com/google-deepmind/mujoco_warp?rev=render#67a18c0bc1be4a90ab85e6f33e920c296ee6ec43" }
 dependencies = [
     { name = "absl-py" },
     { name = "etils", extra = ["epath"] },
@@ -1712,25 +1712,6 @@ dependencies = [
     { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "warp-lang" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "absl-py" },
-    { name = "asv", marker = "extra == 'dev'" },
-    { name = "etils", extras = ["epath"] },
-    { name = "jax", marker = "extra == 'cpu'" },
-    { name = "jax", extras = ["cuda12"], marker = "extra == 'cuda'" },
-    { name = "lsprotocol", marker = "extra == 'dev'", specifier = ">=2023.0.1,<2024.0.0" },
-    { name = "mujoco", specifier = ">=3.3.7", index = "https://py.mujoco.org/" },
-    { name = "numpy" },
-    { name = "pre-commit", marker = "extra == 'dev'" },
-    { name = "pygls", marker = "extra == 'dev'", specifier = ">=1.0.0,<2.0.0" },
-    { name = "pytest", marker = "extra == 'dev'" },
-    { name = "pytest-xdist", marker = "extra == 'dev'" },
-    { name = "ruff", marker = "extra == 'dev'" },
-    { name = "warp-lang", specifier = ">=1.9.1", index = "https://pypi.nvidia.com/" },
-]
-provides-extras = ["dev", "cpu", "cuda"]
 
 [[package]]
 name = "networkx"
@@ -2911,7 +2892,7 @@ wheels = [
 [[package]]
 name = "rsl-rl-lib"
 version = "3.2.0"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/kevinzakka/rsl_rl?rev=spatial-softmax#bd7906a48a72546752247e56f3a8f097e40e37c1" }
 dependencies = [
     { name = "gitpython" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -2922,10 +2903,6 @@ dependencies = [
     { name = "torch", version = "2.9.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'darwin'" },
     { name = "torch", version = "2.9.1+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "sys_platform != 'darwin'" },
     { name = "torchvision" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/e7/90/4a06e879f888bdabc2d9e782e15350b20d35c7928cfdda9e45a2d0acfab8/rsl_rl_lib-3.2.0.tar.gz", hash = "sha256:d1f23097921e230274e02c837a6b6f8af2ee81e087762e8b77ffa3fbd32dd0de", size = 38869, upload-time = "2025-11-28T16:23:35.16Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d8/fd/11d5b88be193493c53b4633732eb628e49b9f802efbaf3350c3265c61abf/rsl_rl_lib-3.2.0-py3-none-any.whl", hash = "sha256:5e822900d1cccf3f7fc02875bdb5612388785b8de5f9c2a5a0074f3d8363859a", size = 55196, upload-time = "2025-11-28T16:23:34.123Z" },
 ]
 
 [[package]]

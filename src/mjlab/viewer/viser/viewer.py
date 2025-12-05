@@ -114,7 +114,8 @@ class ViserPlayViewer(BaseViewer):
       if camera_sensors:
         with self._server.gui.add_folder("Camera Feeds"):
           self._camera_viewers = [
-            ViserCameraViewer(self._server, sensor) for sensor in camera_sensors
+            ViserCameraViewer(self._server, sensor, sim.mj_model, self._scene.mj_data)
+            for sensor in camera_sensors
           ]
       else:
         self._camera_viewers = []
@@ -170,7 +171,7 @@ class ViserPlayViewer(BaseViewer):
     # Update camera images (sensor update_period handles rate limiting)
     if self._camera_viewers and (not self._is_paused or self._needs_update):
       for camera_viewer in self._camera_viewers:
-        camera_viewer.update(self._scene.env_idx)
+        camera_viewer.update(sim.data, self._scene.env_idx)
 
     # Update debug visualizations if enabled
     if self._scene.debug_visualization_enabled and hasattr(
