@@ -1,0 +1,32 @@
+[
+  {
+    "id": "lhud0asc",
+    "name": "2025-12-05_21-54-31",
+    "url": "https://wandb.ai/gcbc_researchers/mjlab/runs/lhud0asc",
+    "created_at": "2025-12-06T05:54:40Z",
+    "commit": "db67d63",
+    "metrics": {
+      "success_rate": 0.9912109375,
+      "mpkpe": 0.02573578804731369,
+      "r_mpkpe": 0.024718839675188065,
+      "joint_vel_error": 2.5717921257019043,
+      "ee_pos_error": 0.04071095213294029,
+      "ee_ori_error": 0.16945095360279083
+    }
+  },
+  {
+    "id": "viz840w8",
+    "name": "2025-12-05_17-25-32",
+    "url": "https://wandb.ai/gcbc_researchers/mjlab/runs/viz840w8",
+    "created_at": "2025-12-06T01:25:38Z",
+    "commit": "e195ef5",
+    "metrics": {
+      "success_rate": 0.9892578125,
+      "mpkpe": 0.02657376602292061,
+      "r_mpkpe": 0.025981683284044266,
+      "joint_vel_error": 2.636514663696289,
+      "ee_pos_error": 0.04385779798030853,
+      "ee_ori_error": 0.16965605318546295
+    }
+  }
+]
