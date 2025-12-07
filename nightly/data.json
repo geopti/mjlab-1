@@ -1,5 +1,20 @@
 [
   {
+    "id": "jlud0nsa",
+    "name": "2025-12-07_13-19-04",
+    "url": "https://wandb.ai/gcbc_researchers/mjlab/runs/jlud0nsa",
+    "created_at": "2025-12-07T21:19:10Z",
+    "commit": "21645bd",
+    "metrics": {
+      "success_rate": 0.998046875,
+      "mpkpe": 0.027522653341293335,
+      "r_mpkpe": 0.026314038783311844,
+      "joint_vel_error": 2.9850692749023438,
+      "ee_pos_error": 0.045025672763586044,
+      "ee_ori_error": 0.1643875241279602
+    }
+  },
+  {
     "id": "qty0mhq2",
     "name": "2025-12-07_02-21-00",
     "url": "https://wandb.ai/gcbc_researchers/mjlab/runs/qty0mhq2",
