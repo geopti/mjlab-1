@@ -8,6 +8,28 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <style>
         :root {
+            --bg: #ffffff;
+            --bg-card: #f6f8fa;
+            --text: #1f2328;
+            --text-dim: #656d76;
+            --border: #d0d7de;
+            --accent: #0969da;
+            --green: #1a7f37;
+            --red: #cf222e;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --bg: #0d1117;
+                --bg-card: #161b22;
+                --text: #c9d1d9;
+                --text-dim: #8b949e;
+                --border: #30363d;
+                --accent: #58a6ff;
+                --green: #3fb950;
+                --red: #f85149;
+            }
+        }
+        :root[data-theme="dark"] {
             --bg: #0d1117;
             --bg-card: #161b22;
             --text: #c9d1d9;
@@ -93,12 +115,29 @@
         }
         a { color: var(--accent); text-decoration: none; }
         a:hover { text-decoration: underline; }
+        .theme-toggle {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.5rem;
+            cursor: pointer;
+            color: var(--text);
+            font-size: 1rem;
+            line-height: 1;
+        }
+        .theme-toggle:hover { border-color: var(--accent); }
+        .header-right { display: flex; align-items: center; gap: 1rem; }
     </style>
 </head>
 <body>
     <header>
         <h1>MJLab Nightly Tracking Benchmark</h1>
-        <span class="timestamp">Updated: 2025-12-07 12:47</span>
+        <div class="header-right">
+            <span class="timestamp">Updated: 2025-12-07 12:55</span>
+            <button class="theme-toggle" id="theme-toggle" title="Toggle theme">
+                <span id="theme-icon"></span>
+            </button>
+        </div>
     </header>
 
     <div class="summary" id="summary"></div>
@@ -119,6 +158,64 @@
     </table>
 
     <script>
+        // Theme toggle logic
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const root = document.documentElement;
+
+        function getSystemTheme() {
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+
+        function getEffectiveTheme() {
+            const stored = localStorage.getItem('theme');
+            if (stored === 'dark' || stored === 'light') return stored;
+            return getSystemTheme();
+        }
+
+        function updateThemeIcon() {
+            const stored = localStorage.getItem('theme');
+            if (!stored) {
+                themeIcon.textContent = '⚙️'; // gear for auto
+                themeToggle.title = 'Theme: System (click to toggle)';
+            } else if (stored === 'dark') {
+                themeIcon.textContent = '🌙'; // moon
+                themeToggle.title = 'Theme: Dark (click to toggle)';
+            } else {
+                themeIcon.textContent = '☀️'; // sun
+                themeToggle.title = 'Theme: Light (click to toggle)';
+            }
+        }
+
+        function applyTheme() {
+            const stored = localStorage.getItem('theme');
+            if (stored) {
+                root.setAttribute('data-theme', stored);
+            } else {
+                root.removeAttribute('data-theme');
+            }
+            updateThemeIcon();
+            updateChartColors();
+        }
+
+        function cycleTheme() {
+            const stored = localStorage.getItem('theme');
+            if (!stored) {
+                // auto -> dark
+                localStorage.setItem('theme', 'dark');
+            } else if (stored === 'dark') {
+                // dark -> light
+                localStorage.setItem('theme', 'light');
+            } else {
+                // light -> auto
+                localStorage.removeItem('theme');
+            }
+            applyTheme();
+        }
+
+        themeToggle.addEventListener('click', cycleTheme);
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+
         const runs = [{"id": "qty0mhq2", "name": "2025-12-07_02-21-00", "url": "https://wandb.ai/gcbc_researchers/mjlab/runs/qty0mhq2", "created_at": "2025-12-07T10:21:06Z", "commit": "7870092", "metrics": {"success_rate": 0.994140625, "mpkpe": 0.027746720239520073, "r_mpkpe": 0.026400309056043625, "joint_vel_error": 3.025346517562866, "ee_pos_error": 0.04494281858205795, "ee_ori_error": 0.1691068708896637}}, {"id": "lhud0asc", "name": "2025-12-05_21-54-31", "url": "https://wandb.ai/gcbc_researchers/mjlab/runs/lhud0asc", "created_at": "2025-12-06T05:54:40Z", "commit": "db67d63", "metrics": {"success_rate": 0.9912109375, "mpkpe": 0.02573578804731369, "r_mpkpe": 0.024718839675188065, "joint_vel_error": 2.5717921257019043, "ee_pos_error": 0.04071095213294029, "ee_ori_error": 0.16945095360279083}}, {"id": "viz840w8", "name": "2025-12-05_17-25-32", "url": "https://wandb.ai/gcbc_researchers/mjlab/runs/viz840w8", "created_at": "2025-12-06T01:25:38Z", "commit": "e195ef5", "metrics": {"success_rate": 0.9892578125, "mpkpe": 0.02657376602292061, "r_mpkpe": 0.025981683284044266, "joint_vel_error": 2.636514663696289, "ee_pos_error": 0.04385779798030853, "ee_ori_error": 0.16965605318546295}}];
         const METRICS = [["success_rate", "Success Rate", "%", 100, true], ["mpkpe", "MPKPE", "m", 1, false], ["r_mpkpe", "R-MPKPE", "m", 1, false], ["ee_pos_error", "EE Position Error", "m", 1, false], ["ee_ori_error", "EE Orientation Error", "rad", 1, false], ["joint_vel_error", "Joint Velocity Error", "rad/s", 1, false]];
 
@@ -133,6 +230,17 @@
             ee_ori_error: '#f85149',
             joint_vel_error: '#79c0ff'
         };
+
+        let charts = [];
+
+        function updateChartColors() {
+            const style = getComputedStyle(root);
+            const textDim = style.getPropertyValue('--text-dim').trim();
+            const border = style.getPropertyValue('--border').trim();
+            Chart.defaults.color = textDim;
+            Chart.defaults.borderColor = border;
+            charts.forEach(c => c.update());
+        }
 
         // Summary cards
         const summary = document.getElementById('summary');
@@ -162,8 +270,6 @@
 
         // Charts
         const chartsContainer = document.getElementById('charts');
-        Chart.defaults.color = '#8b949e';
-        Chart.defaults.borderColor = '#30363d';
 
         METRICS.forEach(([key, label, unit, scale, higherIsBetter]) => {
             const data = runs.map(r => ({
@@ -188,7 +294,7 @@
             `;
             chartsContainer.appendChild(card);
 
-            new Chart(card.querySelector('canvas'), {
+            charts.push(new Chart(card.querySelector('canvas'), {
                 type: 'line',
                 data: {
                     datasets: [{
@@ -223,13 +329,28 @@
                         x: {
                             type: 'time',
                             time: { unit: 'day' },
-                            ticks: { maxTicksLimit: 5 }
+                            ticks: { maxTicksLimit: 5 },
+                            title: {
+                                display: true,
+                                text: 'Date',
+                                font: { size: 11 }
+                            }
                         },
-                        y: { ticks: { maxTicksLimit: 5 } }
+                        y: {
+                            ticks: { maxTicksLimit: 5 },
+                            title: {
+                                display: true,
+                                text: `${unit} (${higherIsBetter ? 'higher is better' : 'lower is better'})`,
+                                font: { size: 11 }
+                            }
+                        }
                     }
                 }
-            });
+            }));
         });
+
+        // Initialize theme
+        applyTheme();
 
         // Table
         const tbody = document.getElementById('table-body');
