@@ -106,7 +106,7 @@ install. These options are interchangeable: you can switch at any time.
 
       .. code:: bash
 
-         uv add "mjlab @ git+https://github.com/mujocolab/mjlab" "mujoco-warp @ git+https://github.com/google-deepmind/mujoco_warp@486642c3fa262a989b482e0e506716d5793d61a9"
+         uv add "mjlab @ git+https://github.com/mujocolab/mjlab" "mujoco-warp @ git+https://github.com/google-deepmind/mujoco_warp@9fc294d86955a303619a254cefae809a41adb274"
 
       .. note::
             
