@@ -164,13 +164,57 @@
             margin: 1.5rem 0 1rem 0;
             color: var(--text-dim);
         }
+        .runs-details {
+            margin-top: 1.5rem;
+        }
+        .runs-details summary {
+            cursor: pointer;
+            padding: 0.75rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-weight: 500;
+            color: var(--text-dim);
+        }
+        .runs-details summary:hover {
+            border-color: var(--accent);
+        }
+        .runs-details[open] summary {
+            border-radius: 8px 8px 0 0;
+            border-bottom: none;
+        }
+        .runs-details table {
+            border-radius: 0 0 8px 8px;
+        }
+        .info-box {
+            margin-bottom: 1.5rem;
+        }
+        .info-box summary {
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: var(--accent);
+            font-weight: 500;
+        }
+        .info-box summary:hover {
+            text-decoration: underline;
+        }
+        .info-box p {
+            margin-top: 0.75rem;
+            padding: 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            color: var(--text-dim);
+        }
     </style>
 </head>
 <body>
     <header>
         <h1>MJLab Nightly Benchmark</h1>
         <div class="header-right">
-            <span class="timestamp">Updated: 2025-12-08 03:52</span>
+            <span class="timestamp">Updated: 2025-12-08 12:27</span>
             <button class="theme-toggle" id="theme-toggle" title="Toggle theme">
                 <span id="theme-icon"></span>
             </button>
@@ -178,44 +222,71 @@
     </header>
 
     <div class="tabs">
-        <button class="tab active" data-tab="training">Training Metrics</button>
+        <button class="tab active" data-tab="tracking">Tracking Eval</button>
         <button class="tab" data-tab="throughput">Throughput</button>
     </div>
 
-    <div id="training" class="tab-content active">
+    <div id="tracking" class="tab-content active">
+        <details class="info-box">
+            <summary>What is this?</summary>
+            <p>
+              Every night, we train a policy to imitate a reference motion on the Unitree G1 using the latest MJLab commit.
+              The trained policy is then evaluated across 1024 trials, with the results logged here to catch regressions over time.
+            </p>
+        </details>
         <div class="summary" id="summary"></div>
         <div class="charts" id="charts"></div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Commit</th>
-                    <th>Run</th>
-                    <th>Success Rate</th>
-                    <th>MPKPE (m)</th>
-                    <th>EE Pos Error (m)</th>
-                </tr>
-            </thead>
-            <tbody id="table-body"></tbody>
-        </table>
+        <details class="runs-details">
+            <summary>All Runs</summary>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Commit</th>
+                        <th>Run</th>
+                        <th>Success Rate</th>
+                        <th>MPKPE (m)</th>
+                        <th>EE Pos Error (m)</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </details>
     </div>
 
     <div id="throughput" class="tab-content">
+        <details class="info-box">
+            <summary>What is this?</summary>
+            <p>
+                Measures simulation throughput (steps per second) for different tasks.
+                <strong>Physics FPS</strong> is raw MuJoCo stepping speed (just <code>mj_step</code>).
+                <strong>Env FPS</strong> is the full environment step including observations, rewards,
+                terminations, and resets. <strong>Overhead</strong> is the percentage slowdown from
+                environment logic on top of physics.
+            </p>
+            <p>
+                Note: These benchmarks use zero actions, which causes frequent terminations and resets.
+                This represents a worst-case scenario for overhead since resets are expensive.
+            </p>
+        </details>
         <div class="summary" id="throughput-summary"></div>
         <div class="charts" id="throughput-charts"></div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Commit</th>
-                    <th>Task</th>
-                    <th>Physics FPS</th>
-                    <th>Env FPS</th>
-                    <th>Overhead</th>
-                </tr>
-            </thead>
-            <tbody id="throughput-table-body"></tbody>
-        </table>
+        <details class="runs-details">
+            <summary>All Runs</summary>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Commit</th>
+                        <th>Task</th>
+                        <th>Physics FPS</th>
+                        <th>Env FPS</th>
+                        <th>Overhead</th>
+                    </tr>
+                </thead>
+                <tbody id="throughput-table-body"></tbody>
+            </table>
+        </details>
     </div>
 
     <script>
@@ -447,7 +518,7 @@
         }
 
         // Throughput data and charts
-        const throughputData = [{"created_at": "2025-12-07T22:42:28.384585+00:00", "commit": "21645bd", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1968030.8286437632, "env_fps": 255798.34002178867, "overhead_pct": 48.009281907831095}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1055394.5295213824, "env_fps": 131181.76465177565, "overhead_pct": 50.281430883949675}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "physics_fps": 2416522.9931826484, "env_fps": 453563.9015622926, "overhead_pct": 24.92289080768356}]}, {"created_at": "2025-12-08T03:16:49.263065+00:00", "commit": "60daa34", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1964251.6333091334, "env_fps": 254543.81164633832, "overhead_pct": 48.16472445182317}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1042254.9332651878, "env_fps": 130926.90508807496, "overhead_pct": 49.75244504608649}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "physics_fps": 2477588.4234503875, "env_fps": 454148.0994343247, "overhead_pct": 26.67900848489434}]}, {"created_at": "2025-12-08T11:52:20.325574+00:00", "commit": "60daa34", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1969340.68893866, "env_fps": 255035.79541560137, "overhead_pct": 48.198745529794905}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1043526.3878276454, "env_fps": 130897.14784451295, "overhead_pct": 49.825074144216984}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "physics_fps": 2418605.9976211456, "env_fps": 453188.2000491822, "overhead_pct": 25.04968556351519}]}];
+        const throughputData = [{"created_at": "2025-12-07T22:42:28.384585+00:00", "commit": "21645bd", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1968030.8286437632, "env_fps": 255798.34002178867, "overhead_pct": 48.009281907831095}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1055394.5295213824, "env_fps": 131181.76465177565, "overhead_pct": 50.281430883949675}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "physics_fps": 2416522.9931826484, "env_fps": 453563.9015622926, "overhead_pct": 24.92289080768356}]}, {"created_at": "2025-12-08T03:16:49.263065+00:00", "commit": "60daa34", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1964251.6333091334, "env_fps": 254543.81164633832, "overhead_pct": 48.16472445182317}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1042254.9332651878, "env_fps": 130926.90508807496, "overhead_pct": 49.75244504608649}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "physics_fps": 2477588.4234503875, "env_fps": 454148.0994343247, "overhead_pct": 26.67900848489434}]}, {"created_at": "2025-12-08T11:52:20.325574+00:00", "commit": "60daa34", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1969340.68893866, "env_fps": 255035.79541560137, "overhead_pct": 48.198745529794905}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1043526.3878276454, "env_fps": 130897.14784451295, "overhead_pct": 49.825074144216984}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "physics_fps": 2418605.9976211456, "env_fps": 453188.2000491822, "overhead_pct": 25.04968556351519}]}, {"created_at": "2025-12-08T20:27:47.857170+00:00", "commit": "7807128", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1964001.366521221, "env_fps": 255078.54747631444, "overhead_pct": 48.04921181330383}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1078888.5070727386, "env_fps": 131181.11349251794, "overhead_pct": 51.36434853738832}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "physics_fps": 2434447.808586029, "env_fps": 456137.9462653171, "overhead_pct": 25.05274589883276}]}];
         const throughputChartsContainer = document.getElementById('throughput-charts');
         const throughputSummary = document.getElementById('throughput-summary');
         const throughputTbody = document.getElementById('throughput-table-body');

@@ -88,5 +88,35 @@
         "overhead_pct": 25.04968556351519
       }
     ]
+  },
+  {
+    "created_at": "2025-12-08T20:27:47.857170+00:00",
+    "commit": "7807128",
+    "results": [
+      {
+        "task": "Mjlab-Velocity-Flat-Unitree-Go1",
+        "num_envs": 4096,
+        "num_steps": 200,
+        "physics_fps": 1964001.366521221,
+        "env_fps": 255078.54747631444,
+        "overhead_pct": 48.04921181330383
+      },
+      {
+        "task": "Mjlab-Tracking-Flat-Unitree-G1",
+        "num_envs": 4096,
+        "num_steps": 200,
+        "physics_fps": 1078888.5070727386,
+        "env_fps": 131181.11349251794,
+        "overhead_pct": 51.36434853738832
+      },
+      {
+        "task": "Mjlab-Lift-Cube-Yam",
+        "num_envs": 4096,
+        "num_steps": 200,
+        "physics_fps": 2434447.808586029,
+        "env_fps": 456137.9462653171,
+        "overhead_pct": 25.05274589883276
+      }
+    ]
   }
 ]
