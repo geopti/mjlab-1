@@ -214,7 +214,7 @@
     <header>
         <h1>MJLab Nightly Benchmark</h1>
         <div class="header-right">
-            <span class="timestamp">Updated: 2025-12-08 12:27</span>
+            <span class="timestamp">Updated: 2025-12-08 16:30</span>
             <button class="theme-toggle" id="theme-toggle" title="Toggle theme">
                 <span id="theme-icon"></span>
             </button>
@@ -350,6 +350,7 @@
 
         const runs = [{"id": "9w0xq5d2", "name": "2025-12-08_02-29-00", "url": "https://wandb.ai/gcbc_researchers/mjlab/runs/9w0xq5d2", "created_at": "2025-12-08T10:29:06Z", "commit": "60daa34", "metrics": {"success_rate": 0.9814453125, "mpkpe": 0.0280788391828537, "r_mpkpe": 0.025678779929876328, "joint_vel_error": 2.9663138389587402, "ee_pos_error": 0.04452243074774742, "ee_ori_error": 0.1707395762205124}}, {"id": "jlud0nsa", "name": "2025-12-07_13-19-04", "url": "https://wandb.ai/gcbc_researchers/mjlab/runs/jlud0nsa", "created_at": "2025-12-07T21:19:10Z", "commit": "21645bd", "metrics": {"success_rate": 0.998046875, "mpkpe": 0.027522653341293335, "r_mpkpe": 0.026314038783311844, "joint_vel_error": 2.9850692749023438, "ee_pos_error": 0.045025672763586044, "ee_ori_error": 0.1643875241279602}}, {"id": "qty0mhq2", "name": "2025-12-07_02-21-00", "url": "https://wandb.ai/gcbc_researchers/mjlab/runs/qty0mhq2", "created_at": "2025-12-07T10:21:06Z", "commit": "7870092", "metrics": {"success_rate": 0.994140625, "mpkpe": 0.027746720239520073, "r_mpkpe": 0.026400309056043625, "joint_vel_error": 3.025346517562866, "ee_pos_error": 0.04494281858205795, "ee_ori_error": 0.1691068708896637}}, {"id": "lhud0asc", "name": "2025-12-05_21-54-31", "url": "https://wandb.ai/gcbc_researchers/mjlab/runs/lhud0asc", "created_at": "2025-12-06T05:54:40Z", "commit": "db67d63", "metrics": {"success_rate": 0.9912109375, "mpkpe": 0.02573578804731369, "r_mpkpe": 0.024718839675188065, "joint_vel_error": 2.5717921257019043, "ee_pos_error": 0.04071095213294029, "ee_ori_error": 0.16945095360279083}}, {"id": "viz840w8", "name": "2025-12-05_17-25-32", "url": "https://wandb.ai/gcbc_researchers/mjlab/runs/viz840w8", "created_at": "2025-12-06T01:25:38Z", "commit": "e195ef5", "metrics": {"success_rate": 0.9892578125, "mpkpe": 0.02657376602292061, "r_mpkpe": 0.025981683284044266, "joint_vel_error": 2.636514663696289, "ee_pos_error": 0.04385779798030853, "ee_ori_error": 0.16965605318546295}}];
         const METRICS = [["success_rate", "Success Rate", "%", 100, true], ["mpkpe", "MPKPE", "m", 1, false], ["r_mpkpe", "R-MPKPE", "m", 1, false], ["ee_pos_error", "EE Position Error", "m", 1, false], ["ee_ori_error", "EE Orientation Error", "rad", 1, false], ["joint_vel_error", "Joint Velocity Error", "rad/s", 1, false]];
+        const GITHUB_REPO = 'https://github.com/mujocolab/mjlab';
 
         // Sort by date ascending for charts.
         runs.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
@@ -442,6 +443,14 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) {
+                            const d = data[elements[0].index];
+                            if (d?.commit && d.commit !== 'unknown') {
+                                window.open(`${GITHUB_REPO}/commit/${d.commit}`, '_blank');
+                            }
+                        }
+                    },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
@@ -453,6 +462,10 @@
                                 label: (item) => {
                                     const d = item.raw;
                                     return `${label}: ${d.y?.toFixed(4)} ${unit}`;
+                                },
+                                footer: (items) => {
+                                    const d = items[0]?.raw;
+                                    return d?.commit && d.commit !== 'unknown' ? 'Click to view commit' : '';
                                 }
                             }
                         }
@@ -487,10 +500,13 @@
         // Table
         const tbody = document.getElementById('table-body');
         [...runs].reverse().forEach(run => {
+            const commitLink = run.commit && run.commit !== 'unknown'
+                ? `<a href="${GITHUB_REPO}/commit/${run.commit}" target="_blank"><code>${run.commit}</code></a>`
+                : `<code>${run.commit}</code>`;
             tbody.innerHTML += `
                 <tr>
                     <td>${new Date(run.created_at).toLocaleDateString()}</td>
-                    <td><code>${run.commit}</code></td>
+                    <td>${commitLink}</td>
                     <td><a href="${run.url}" target="_blank">${run.name}</a></td>
                     <td>${(run.metrics.success_rate * 100).toFixed(1)}%</td>
                     <td>${run.metrics.mpkpe.toFixed(4)}</td>
@@ -518,7 +534,7 @@
         }
 
         // Throughput data and charts
-        const throughputData = [{"created_at": "2025-12-07T22:42:28.384585+00:00", "commit": "21645bd", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1968030.8286437632, "env_fps": 255798.34002178867, "overhead_pct": 48.009281907831095}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1055394.5295213824, "env_fps": 131181.76465177565, "overhead_pct": 50.281430883949675}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "physics_fps": 2416522.9931826484, "env_fps": 453563.9015622926, "overhead_pct": 24.92289080768356}]}, {"created_at": "2025-12-08T03:16:49.263065+00:00", "commit": "60daa34", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1964251.6333091334, "env_fps": 254543.81164633832, "overhead_pct": 48.16472445182317}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1042254.9332651878, "env_fps": 130926.90508807496, "overhead_pct": 49.75244504608649}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "physics_fps": 2477588.4234503875, "env_fps": 454148.0994343247, "overhead_pct": 26.67900848489434}]}, {"created_at": "2025-12-08T11:52:20.325574+00:00", "commit": "60daa34", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1969340.68893866, "env_fps": 255035.79541560137, "overhead_pct": 48.198745529794905}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1043526.3878276454, "env_fps": 130897.14784451295, "overhead_pct": 49.825074144216984}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "physics_fps": 2418605.9976211456, "env_fps": 453188.2000491822, "overhead_pct": 25.04968556351519}]}, {"created_at": "2025-12-08T20:27:47.857170+00:00", "commit": "7807128", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1964001.366521221, "env_fps": 255078.54747631444, "overhead_pct": 48.04921181330383}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1078888.5070727386, "env_fps": 131181.11349251794, "overhead_pct": 51.36434853738832}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "physics_fps": 2434447.808586029, "env_fps": 456137.9462653171, "overhead_pct": 25.05274589883276}]}];
+        const throughputData = [{"created_at": "2025-12-07T22:42:28.384585+00:00", "commit": "21645bd", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1968030.8286437632, "env_fps": 255798.34002178867, "overhead_pct": 48.009281907831095}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1055394.5295213824, "env_fps": 131181.76465177565, "overhead_pct": 50.281430883949675}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "physics_fps": 2416522.9931826484, "env_fps": 453563.9015622926, "overhead_pct": 24.92289080768356}]}, {"created_at": "2025-12-08T03:16:49.263065+00:00", "commit": "60daa34", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1964251.6333091334, "env_fps": 254543.81164633832, "overhead_pct": 48.16472445182317}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1042254.9332651878, "env_fps": 130926.90508807496, "overhead_pct": 49.75244504608649}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "physics_fps": 2477588.4234503875, "env_fps": 454148.0994343247, "overhead_pct": 26.67900848489434}]}, {"created_at": "2025-12-08T11:52:20.325574+00:00", "commit": "60daa34", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1969340.68893866, "env_fps": 255035.79541560137, "overhead_pct": 48.198745529794905}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1043526.3878276454, "env_fps": 130897.14784451295, "overhead_pct": 49.825074144216984}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "physics_fps": 2418605.9976211456, "env_fps": 453188.2000491822, "overhead_pct": 25.04968556351519}]}, {"created_at": "2025-12-08T20:27:47.857170+00:00", "commit": "7807128", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1964001.366521221, "env_fps": 255078.54747631444, "overhead_pct": 48.04921181330383}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1078888.5070727386, "env_fps": 131181.11349251794, "overhead_pct": 51.36434853738832}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "physics_fps": 2434447.808586029, "env_fps": 456137.9462653171, "overhead_pct": 25.05274589883276}]}, {"created_at": "2025-12-09T00:30:12.047812+00:00", "commit": "1a73031", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1966795.265644779, "env_fps": 255699.7153500043, "overhead_pct": 47.9966786952423}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1046694.9144529722, "env_fps": 131155.15034787747, "overhead_pct": 49.87836530516735}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "physics_fps": 2427529.455550035, "env_fps": 454399.6920934287, "overhead_pct": 25.12557307108435}]}];
         const throughputChartsContainer = document.getElementById('throughput-charts');
         const throughputSummary = document.getElementById('throughput-summary');
         const throughputTbody = document.getElementById('throughput-table-body');
@@ -597,6 +613,16 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        onClick: (event, elements) => {
+                            if (elements.length > 0) {
+                                const datasetIndex = elements[0].datasetIndex;
+                                const index = elements[0].index;
+                                const d = datasets[datasetIndex].data[index];
+                                if (d?.commit && d.commit !== 'unknown') {
+                                    window.open(`${GITHUB_REPO}/commit/${d.commit}`, '_blank');
+                                }
+                            }
+                        },
                         plugins: {
                             legend: { display: true, position: 'bottom' },
                             tooltip: {
@@ -604,6 +630,10 @@
                                     title: (items) => {
                                         const d = items[0]?.raw;
                                         return d ? `Commit: ${d.commit}` : '';
+                                    },
+                                    footer: (items) => {
+                                        const d = items[0]?.raw;
+                                        return d?.commit && d.commit !== 'unknown' ? 'Click to view commit' : '';
                                     }
                                 }
                             }
@@ -632,10 +662,13 @@
             [...throughputData].reverse().forEach(run => {
                 run.results.forEach((r, i) => {
                     const taskShort = r.task.replace('Mjlab-', '').replace('-Unitree-', '-');
+                    const commitLink = run.commit && run.commit !== 'unknown'
+                        ? `<a href="${GITHUB_REPO}/commit/${run.commit}" target="_blank"><code>${run.commit}</code></a>`
+                        : `<code>${run.commit}</code>`;
                     throughputTbody.innerHTML += `
                         <tr>
                             <td>${i === 0 ? new Date(run.created_at).toLocaleDateString() : ''}</td>
-                            <td>${i === 0 ? `<code>${run.commit}</code>` : ''}</td>
+                            <td>${i === 0 ? commitLink : ''}</td>
                             <td>${taskShort}</td>
                             <td>${(r.physics_fps / 1000).toFixed(0)}K</td>
                             <td>${(r.env_fps / 1000).toFixed(0)}K</td>
