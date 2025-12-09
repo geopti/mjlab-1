@@ -12,12 +12,12 @@ copyright = "2025, The mjlab Developers"
 author = "The mjlab Developers"
 
 extensions = [
+  "sphinx.ext.autodoc",
+  "sphinx.ext.autosummary",
   "autodocsumm",
   "myst_parser",
   "sphinx.ext.napoleon",
   "sphinxemoji.sphinxemoji",
-  "sphinx.ext.autodoc",
-  "sphinx.ext.autosummary",
   "sphinx.ext.githubpages",
   "sphinx.ext.intersphinx",
   "sphinx.ext.mathjax",
@@ -63,8 +63,8 @@ autodoc_class_signature = "separated"
 autodoc_member_order = "bysource"
 autodoc_inherit_docstrings = True
 bibtex_bibfiles = ["source/_static/refs.bib"]
-autosummary_generate = True
-autosummary_generate_overwrite = True
+autosummary_generate = False
+autosummary_generate_overwrite = False
 autodoc_default_options = {
   "members": True,
   "undoc-members": True,
@@ -76,7 +76,6 @@ intersphinx_mapping = {
   "python": ("https://docs.python.org/3", None),
 }
 
-templates_path = []
 exclude_patterns = [
   "_build",
   "_redirect",
@@ -124,11 +123,11 @@ html_show_copyright = True
 html_show_sphinx = False
 html_last_updated_fmt = ""
 
-html_static_path = ["source/_static/css"]
+html_static_path = ["source/_static"]
 html_css_files = ["custom.css"]
 
 html_theme_options = {
-  "path_to_docs": "docs_web/",
+  "path_to_docs": "docs/",
   "collapse_navigation": True,
   "repository_url": "https://github.com/mujocolab/mjlab",
   "use_repository_button": True,

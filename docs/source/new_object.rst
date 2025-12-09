@@ -17,9 +17,9 @@ Example: adding a static box
 
    import mujoco
 
+   from mjlab.asset_zoo.robots import get_g1_robot_cfg
    from mjlab.entity import EntityCfg
    from mjlab.tasks.tracking import make_tracking_env_cfg
-   from mjlab_cookbook_project.robots import get_g1_robot_cfg
 
    def create_box() -> mujoco.MjSpec:
        spec = mujoco.MjSpec()

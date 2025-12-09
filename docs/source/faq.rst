@@ -53,7 +53,7 @@ Does mjlab support multi-GPU training?
 
    - Use ``--gpu-ids 0 1`` (or ``--gpu-ids all``) when running the ``train`` 
      command.
-   - See the :doc:`../core/distributed_training` for configuration details and examples.
+   - See the :doc:`distributed_training` for configuration details and examples.
 
 Training & Debugging
 --------------------
@@ -113,7 +113,7 @@ My training crashes with NaN errors
 
       uv run train.py --enable-nan-guard True
 
-   See the :doc:`NaN Guard documentation <../core/nan_guard>` for details.
+   See the :doc:`NaN Guard documentation <nan_guard>` for details.
 
    The ``nan_guard`` tool makes it easier to:
 
@@ -123,6 +123,15 @@ My training crashes with NaN errors
      `MuJoCo Warp team <https://github.com/google-deepmind/mujoco_warp/issues>`_.
 
    Reporting well-isolated issues helps improve the framework for everyone.
+
+Why aren't my training runs reproducible even with a fixed seed?
+   MuJoCo Warp does not yet guarantee determinism, so running the same
+   simulation with identical inputs may produce slightly different outputs.
+   This is a known limitation being tracked in
+   `mujoco_warp#562 <https://github.com/google-deepmind/mujoco_warp/issues/562>`_.
+
+   Until determinism is implemented upstream, mjlab training runs will not be
+   perfectly reproducible even when setting a seed.
 
 Rendering & Visualization
 -------------------------
@@ -157,7 +166,7 @@ Can I develop custom tasks in my own repository?
    - Your tasks appear as regular entries for the ``train`` and ``play`` commands.
    - You can version and maintain your task repositories independently.
 
-   For a complete guide (with a working example), see :doc:`../tutorials/new_task`.
+   For a complete guide (with a working example), see :doc:`new_task`.
 
 Assets & Compatibility
 ----------------------

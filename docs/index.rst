@@ -10,8 +10,8 @@ What is mjlab?
 
 **mjlab = Isaac Lab's API + MuJoCo's simplicity + GPU acceleration**
 
-We took Isaac Lab's proven manager-based architecture and RL abstractions, 
-then built them directly on MuJoCo Warp. No translation layers, no Omniverse 
+We took Isaac Lab's proven manager-based architecture and RL abstractions,
+then built them directly on MuJoCo Warp. No translation layers, no Omniverse
 overhead. Just fast, transparent physics.
 
 You can try mjlab *without installing anything* by using `uvx`:
@@ -23,7 +23,7 @@ You can try mjlab *without installing anything* by using `uvx`:
 
    # Run the mjlab demo (no local installation needed)
    uvx --from mjlab \
-       --with "mujoco-warp @ git+https://github.com/google-deepmind/mujoco_warp@486642c3fa262a989b482e0e506716d5793d61a9" \
+       --with "mujoco-warp @ git+https://github.com/google-deepmind/mujoco_warp@9fc294d86955a303619a254cefae809a41adb274" \
        demo
 
 If this runs, your setup is compatible with mjlab *for evaluation*.
@@ -31,7 +31,7 @@ If this runs, your setup is compatible with mjlab *for evaluation*.
 License & citation
 ==================
 
-mjlab is licensed under the Apache License, Version 2.0.  
+mjlab is licensed under the Apache License, Version 2.0.
 Please refer to the `LICENSE file <https://github.com/mujocolab/mjlab/blob/main/LICENSE/>`_ for details.
 
 If you use mjlab in your research, we would appreciate a citation:
@@ -54,8 +54,8 @@ Acknowledgments
 mjlab would not exist without the excellent work of the Isaac Lab team, whose API design
 and abstractions mjlab builds upon.
 
-Thanks also to the MuJoCo Warp team — especially Erik Frey and Taylor Howell — for 
-answering our questions, giving helpful feedback, and implementing features based 
+Thanks also to the MuJoCo Warp team — especially Erik Frey and Taylor Howell — for
+answering our questions, giving helpful feedback, and implementing features based
 on our requests countless times.
 
 Table of Contents
@@ -65,43 +65,37 @@ Table of Contents
    :maxdepth: 1
    :caption: Getting Started
 
-   source/getting_started/installation
-   source/getting_started/migration_isaac_lab
+   source/installation
+   source/migration_isaac_lab
 
 .. toctree::
    :maxdepth: 1
    :caption: About the Project
 
-   source/project/motivation
-   source/project/faq
+   source/motivation
+   source/faq
 
 .. toctree::
    :maxdepth: 1
    :caption: Tutorials
 
-   source/tutorials/ext_project
-   source/tutorials/new_robot
-   source/tutorials/new_task
+   source/ext_project
+   source/new_robot
+   source/new_task
 
 .. toctree::
    :maxdepth: 1
    :caption: How-to
 
-   source/how_to/new_object
+   source/new_object
 
 .. toctree::
    :maxdepth: 1
    :caption: Core Concepts
 
-   source/core/randomization
-   source/core/nan_guard
-   source/core/observation
-   source/core/actuators
-   source/core/sensors
-   source/core/distributed_training
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Source API
-
-   source/api/index
+   source/randomization
+   source/nan_guard
+   source/observation
+   source/actuators
+   source/sensors
+   source/distributed_training

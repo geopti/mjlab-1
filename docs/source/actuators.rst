@@ -429,6 +429,8 @@ from hardware datasheets.
 
 .. code-block:: python
 
+    from math import pi
+
     from mjlab.utils.actuator import (
         reflected_inertia_from_two_stage_planetary,
         ElectricActuator

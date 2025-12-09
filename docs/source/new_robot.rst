@@ -104,7 +104,7 @@ Create
 
    from mjlab_cookbook_project import MJLAB_COOKBOOK_PROJECT_SRC_PATH
    from mjlab.entity import Entity, EntityCfg, EntityArticulationInfoCfg
-   from mjlab.utils.spec_config import ActuatorCfg
+   from mjlab.actuator import BuiltinPositionActuatorCfg
 
    # Path to the CartPole XML
    CARTPOLE_XML: Path = (
@@ -121,7 +121,7 @@ Create
        return mujoco.MjSpec.from_file(str(CARTPOLE_XML))
 
    # Actuator configuration for the sliding joint
-   CARTPOLE_ACTUATOR = ActuatorCfg(
+   CARTPOLE_ACTUATOR = BuiltinPositionActuatorCfg(
        joint_names_expr=["slide"],
        effort_limit=20.0,
        stiffness=0.0,

@@ -74,7 +74,7 @@ Then create the file ``src/mjlab_cookbook_project/tasks/__init__.py`` with:
 
 .. code-block:: python
 
-   from mjlab.third_party.isaaclab.isaaclab_tasks.utils.importer import import_packages
+   from mjlab.utils.lab_api.tasks.importer import import_packages
 
    _BLACKLIST_PKGS = ["utils", ".mdp"]
 

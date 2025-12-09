@@ -83,7 +83,6 @@ docs = [
     "sphinxemoji",
     "sphinxcontrib.bibtex",
     "sphinx-icon",
-    "sphinx_design",
     "sphinx-tabs",
     "sphinx_multiversion",
 ]
