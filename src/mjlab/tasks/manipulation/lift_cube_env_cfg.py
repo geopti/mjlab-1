@@ -142,6 +142,16 @@ def make_lift_cube_env_cfg() -> ManagerBasedRlEnvCfg:
         "ranges": (1e-5, 5e-3),
       },
     ),
+    "cube_size": EventTermCfg(
+      mode="reset",
+      func=mdp.randomize_geom_size,
+      domain_randomization=True,
+      params={
+        "asset_cfg": SceneEntityCfg("cube", geom_names=("cube_geom",)),
+        "size_range": (0.5, 2.0),
+        "operation": "scale",
+      },
+    ),
   }
 
   # Collision sensor for end-effector to ground contact.

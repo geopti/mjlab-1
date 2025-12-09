@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Dict, Literal, Tuple, Union
+from typing import TYPE_CHECKING, Callable, Dict, Literal, Tuple, TypeVar, Union
 
+import mujoco
 import torch
 
 from mjlab.entity import Entity, EntityIndexing
@@ -16,9 +17,23 @@ from mjlab.utils.lab_api.math import (
   sample_log_uniform,
   sample_uniform,
 )
+from mjlab.utils.mujoco import compute_geom_aabb, compute_geom_rbound
 
 if TYPE_CHECKING:
   from mjlab.envs import ManagerBasedRlEnv
+
+F = TypeVar("F", bound=Callable)
+
+
+def required_fields(*fields: str) -> Callable[[F], F]:
+  """Decorator to declare which model fields a randomization function requires."""
+
+  def decorator(func: F) -> F:
+    func.required_fields = fields  # type: ignore[attr-defined]
+    return func
+
+  return decorator
+
 
 _DEFAULT_ASSET_CFG = SceneEntityCfg("robot")
 
@@ -248,35 +263,35 @@ class FieldSpec:
 
 
 FIELD_SPECS = {
-  # Dof - uses addresses.
+  # Dof: uses addresses.
   "dof_armature": FieldSpec("dof", use_address=True),
   "dof_frictionloss": FieldSpec("dof", use_address=True),
   "dof_damping": FieldSpec("dof", use_address=True),
-  # Joint - uses IDs directly.
+  # Joint: uses IDs directly.
   "jnt_range": FieldSpec("joint"),
   "jnt_stiffness": FieldSpec("joint"),
-  # Body - uses IDs directly.
+  # Body: uses IDs directly.
   "body_mass": FieldSpec("body"),
   "body_ipos": FieldSpec("body", default_axes=[0, 1, 2]),
   "body_iquat": FieldSpec("body", default_axes=[0, 1, 2, 3]),
   "body_inertia": FieldSpec("body"),
   "body_pos": FieldSpec("body", default_axes=[0, 1, 2]),
   "body_quat": FieldSpec("body", default_axes=[0, 1, 2, 3]),
-  # Geom - uses IDs directly.
+  # Geom: uses IDs directly.
   "geom_friction": FieldSpec("geom", default_axes=[0], valid_axes=[0, 1, 2]),
   "geom_pos": FieldSpec("geom", default_axes=[0, 1, 2]),
   "geom_quat": FieldSpec("geom", default_axes=[0, 1, 2, 3]),
   "geom_rgba": FieldSpec("geom", default_axes=[0, 1, 2, 3]),
-  # Site - uses IDs directly.
+  # Site: uses IDs directly.
   "site_pos": FieldSpec("site", default_axes=[0, 1, 2]),
   "site_quat": FieldSpec("site", default_axes=[0, 1, 2, 3]),
-  # Special case - uses address.
+  # Special case: uses address.
   "qpos0": FieldSpec("joint", use_address=True),
 }
 
 
 def randomize_field(
-  env: "ManagerBasedRlEnv",
+  env: ManagerBasedRlEnv,
   env_ids: torch.Tensor | None,
   field: str,
   ranges: Union[Tuple[float, float], Dict[int, Tuple[float, float]]],
@@ -481,6 +496,7 @@ def _sample_distribution(
     raise ValueError(f"Unknown distribution: {distribution}")
 
 
+@required_fields("actuator_gainprm", "actuator_biasprm")
 def randomize_pd_gains(
   env: ManagerBasedRlEnv,
   env_ids: torch.Tensor | None,
@@ -566,6 +582,7 @@ def randomize_pd_gains(
       )
 
 
+@required_fields("actuator_forcerange")
 def randomize_effort_limits(
   env: ManagerBasedRlEnv,
   env_ids: torch.Tensor | None,
@@ -646,3 +663,102 @@ def randomize_effort_limits(
         f"randomize_effort_limits only supports BuiltinPositionActuator, XmlPositionActuator, "
         f"and IdealPdActuator, got {type(actuator).__name__}"
       )
+
+
+@required_fields("geom_size", "geom_rbound", "geom_aabb")
+def randomize_geom_size(
+  env: ManagerBasedRlEnv,
+  env_ids: torch.Tensor | None,
+  size_range: Tuple[float, float],
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+  distribution: Literal["uniform", "log_uniform"] = "uniform",
+  operation: Literal["scale", "abs"] = "scale",
+) -> None:
+  """Randomize geometry collider sizes and update dependent collision fields.
+
+  This function randomizes geom_size and automatically updates geom_rbound and
+  geom_aabb to maintain correct collision detection behavior.
+
+  Supported geometry types: sphere, capsule, cylinder, box, ellipsoid.
+
+  Note: All geoms specified by asset_cfg.geom_ids must be the same type.
+
+  Args:
+    env: The environment.
+    env_ids: Environment IDs to randomize. If None, randomizes all environments.
+    size_range: (min, max) for size randomization.
+    asset_cfg: Asset configuration specifying which entity and geoms to randomize.
+    distribution: Distribution type ("uniform" or "log_uniform").
+    operation: "scale" multiplies existing sizes, "abs" sets absolute values.
+  """
+  asset: Entity = env.scene[asset_cfg.name]
+
+  if env_ids is None:
+    env_ids = torch.arange(env.num_envs, device=env.device, dtype=torch.int)
+  else:
+    env_ids = env_ids.to(env.device, dtype=torch.int)
+
+  geom_indices = asset.indexing.geom_ids[asset_cfg.geom_ids]
+
+  geom_types = env.sim.model.geom_type[geom_indices]
+  first_type = geom_types[0]
+  if not torch.all(geom_types == first_type):
+    raise ValueError(
+      "randomize_geom_size requires all geoms to be the same type, "
+      "but found multiple types in selection"
+    )
+  geom_type = int(first_type.item())
+
+  unsupported = (
+    mujoco.mjtGeom.mjGEOM_PLANE,
+    mujoco.mjtGeom.mjGEOM_HFIELD,
+    mujoco.mjtGeom.mjGEOM_MESH,
+  )
+  if geom_type in [int(t) for t in unsupported]:
+    raise ValueError(
+      f"randomize_geom_size does not support geom type {geom_type} "
+      "(plane, hfield, mesh are not supported)"
+    )
+
+  env_grid, geom_grid = torch.meshgrid(env_ids, geom_indices, indexing="ij")
+  original_sizes = torch.tensor(
+    env.sim.mj_model.geom_size[geom_indices.cpu().numpy()],
+    device=env.device,
+    dtype=torch.float32,
+  )
+
+  # Determine which axes to randomize based on geom type.
+  if geom_type == mujoco.mjtGeom.mjGEOM_SPHERE:
+    active_axes = [0]  # Only radius
+  elif geom_type in (mujoco.mjtGeom.mjGEOM_CAPSULE, mujoco.mjtGeom.mjGEOM_CYLINDER):
+    active_axes = [0, 1]  # radius and half_length
+  else:  # BOX, ELLIPSOID
+    active_axes = [0, 1, 2]  # All three
+
+  # Shape: (num_env_ids, num_geoms, num_active_axes)
+  scale_samples = _sample_distribution(
+    distribution,
+    torch.tensor(size_range[0], device=env.device),
+    torch.tensor(size_range[1], device=env.device),
+    (len(env_ids), len(geom_indices), len(active_axes)),
+    env.device,
+  )
+
+  # Broadcast original_sizes to match env_ids dimension.
+  new_sizes = original_sizes.unsqueeze(0).expand(len(env_ids), -1, -1).clone()
+  for i, axis in enumerate(active_axes):
+    if operation == "scale":
+      new_sizes[..., axis] = original_sizes[..., axis] * scale_samples[..., i]
+    elif operation == "abs":
+      new_sizes[..., axis] = scale_samples[..., i]
+    else:
+      raise ValueError(f"Unknown operation: {operation}")
+
+  env.sim.model.geom_size[env_grid, geom_grid] = new_sizes
+
+  new_rbound = compute_geom_rbound(geom_type, new_sizes)
+  env.sim.model.geom_rbound[env_grid, geom_grid] = new_rbound
+
+  # Compute and update geom_aabb (only the size part, center stays at 0).
+  new_aabb_size = compute_geom_aabb(geom_type, new_sizes)
+  env.sim.model.geom_aabb[env_grid, geom_grid, 1] = new_aabb_size

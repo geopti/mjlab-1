@@ -215,6 +215,11 @@ class EventManager(ManagerBase):
         self._reset_term_last_triggered_once.append(no_trigger)
 
       if term_cfg.domain_randomization:
-        field_name = term_cfg.params["field"]
-        if field_name not in self._domain_randomization_fields:
-          self._domain_randomization_fields.append(field_name)
+        func = term_cfg.func
+        if hasattr(func, "required_fields") and func.required_fields:
+          field_names = func.required_fields
+        else:
+          field_names = (term_cfg.params["field"],)
+        for field_name in field_names:
+          if field_name not in self._domain_randomization_fields:
+            self._domain_randomization_fields.append(field_name)

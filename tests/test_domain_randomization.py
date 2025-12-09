@@ -6,7 +6,7 @@ import torch
 from conftest import get_test_device
 
 from mjlab.entity import EntityCfg
-from mjlab.envs.mdp.events import randomize_field
+from mjlab.envs.mdp.events import randomize_field, randomize_geom_size
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.scene import Scene, SceneCfg
 from mjlab.sim.sim import Simulation, SimulationCfg
@@ -142,3 +142,114 @@ def test_randomize_field(device, field, ranges, operation, asset_names, axes, se
     )
 
   assert_has_diversity(new_values)
+
+
+CAPSULE_XML = """
+<mujoco>
+  <worldbody>
+    <body name="base" pos="0 0 1">
+      <freejoint name="free_joint"/>
+      <inertial pos="0 0 0" mass="1.0" diaginertia="0.01 0.01 0.01"/>
+      <geom name="capsule1" type="capsule" size="0.05 0.1"/>
+      <geom name="capsule2" type="capsule" size="0.03 0.08"/>
+    </body>
+    <body name="ground">
+      <geom name="floor" type="plane" size="10 10 0.1"/>
+    </body>
+  </worldbody>
+</mujoco>
+"""
+
+
+def create_capsule_env(device, num_envs=NUM_ENVS):
+  """Create a test environment with capsule geoms for size randomization."""
+  entity_cfg = EntityCfg(spec_fn=lambda: mujoco.MjSpec.from_string(CAPSULE_XML))
+  scene_cfg = SceneCfg(num_envs=num_envs, entities={"robot": entity_cfg})
+  scene = Scene(scene_cfg, device)
+  model = scene.compile()
+
+  sim_cfg = SimulationCfg()
+  sim = Simulation(num_envs=num_envs, cfg=sim_cfg, model=model, device=device)
+  scene.initialize(model, sim.model, sim.data)
+  sim.expand_model_fields(("geom_size", "geom_rbound", "geom_aabb"))
+
+  class Env:
+    def __init__(self, scene, sim):
+      self.scene = scene
+      self.sim = sim
+      self.num_envs = scene.num_envs
+      self.device = device
+
+  return Env(scene, sim)
+
+
+def test_randomize_geom_size_updates_dependent_fields(device):
+  """Test that randomize_geom_size updates geom_size, geom_rbound, and geom_aabb."""
+  torch.manual_seed(42)
+  env = create_capsule_env(device)
+  robot = env.scene["robot"]
+
+  capsule_indices = robot.indexing.geom_ids[[0, 1]]
+
+  initial_sizes = env.sim.model.geom_size[:, capsule_indices].clone()
+  initial_rbound = env.sim.model.geom_rbound[:, capsule_indices].clone()
+
+  asset_cfg = SceneEntityCfg("robot", geom_names=("capsule.*",))
+  asset_cfg.resolve(env.scene)
+  randomize_geom_size(
+    env,  # type: ignore[arg-type]
+    env_ids=None,
+    size_range=(0.8, 1.2),
+    asset_cfg=asset_cfg,
+    operation="scale",
+  )
+
+  new_sizes = env.sim.model.geom_size[:, capsule_indices]
+  new_rbound = env.sim.model.geom_rbound[:, capsule_indices]
+  new_aabb = env.sim.model.geom_aabb[:, capsule_indices]
+
+  # Sizes should have changed.
+  assert not torch.allclose(new_sizes, initial_sizes)
+
+  # rbound should be updated correctly: radius + half_length for capsule.
+  expected_rbound = new_sizes[..., 0] + new_sizes[..., 1]
+  assert torch.allclose(new_rbound, expected_rbound, atol=1e-6)
+
+  # aabb size should be updated: (r, r, r+h) for capsule.
+  expected_aabb_size = torch.stack(
+    [new_sizes[..., 0], new_sizes[..., 0], new_sizes[..., 0] + new_sizes[..., 1]],
+    dim=-1,
+  )
+  assert torch.allclose(new_aabb[..., 1, :], expected_aabb_size, atol=1e-6)
+
+  # rbound should have changed from initial.
+  assert not torch.allclose(new_rbound, initial_rbound)
+
+
+def test_randomize_geom_size_respects_scale_range(device):
+  """Test that scale operation keeps values within expected range."""
+  torch.manual_seed(123)
+  env = create_capsule_env(device)
+
+  capsule_indices = env.scene["robot"].indexing.geom_ids[[0, 1]]
+  initial_sizes = env.sim.model.geom_size[:, capsule_indices].clone()
+
+  scale_min, scale_max = 0.5, 1.5
+  asset_cfg = SceneEntityCfg("robot", geom_names=("capsule.*",))
+  asset_cfg.resolve(env.scene)
+  randomize_geom_size(
+    env,  # type: ignore[arg-type]
+    env_ids=None,
+    size_range=(scale_min, scale_max),
+    asset_cfg=asset_cfg,
+    operation="scale",
+  )
+
+  new_sizes = env.sim.model.geom_size[:, capsule_indices]
+
+  # Check radius (axis 0) and half_length (axis 1) are within scaled range.
+  for axis in [0, 1]:
+    min_expected = initial_sizes[..., axis] * scale_min
+    max_expected = initial_sizes[..., axis] * scale_max
+    assert torch.all(new_sizes[..., axis] >= min_expected - 1e-6)
+    assert torch.all(new_sizes[..., axis] <= max_expected + 1e-6)
