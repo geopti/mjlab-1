@@ -31,25 +31,25 @@ Select the card that best matches how you plan to use ``mjlab``.
 .. grid:: 2
    :gutter: 2
 
-   .. grid-item-card:: Method 1 – Use mjlab as a dependency (uv)
+   .. grid-item-card:: Method 1 - Use mjlab as a dependency (uv)
       :link: install-uv-dependency
       :link-type: ref
 
       You are **using mjlab as a dependency** in your own project managed by ``uv``. **(Recommended for most users)**
 
-   .. grid-item-card:: Method 2 – Develop / contribute (uv)
+   .. grid-item-card:: Method 2 - Develop / contribute (uv)
       :link: install-uv-develop
       :link-type: ref
 
       You are **trying mjlab** or **contributing to mjlab itself** directly from inside the mjlab repository, with ``uv`` managing the environment.
 
-   .. grid-item-card:: Method 3 – Classic pip / venv / conda
+   .. grid-item-card:: Method 3 - Classic pip / venv / conda
       :link: install-pip
       :link-type: ref
 
       You are using **classic tools** (``pip`` / ``venv`` / ``conda``) and **do not use uv**.
 
-   .. grid-item-card:: Method 4 – Docker / clusters
+   .. grid-item-card:: Method 4 - Docker / clusters
       :link: install-docker
       :link-type: ref
 
@@ -58,7 +58,7 @@ Select the card that best matches how you plan to use ``mjlab``.
 
 .. _install-uv-dependency:
 
-Method 1 – Use mjlab as a dependency (uv)
+Method 1 - Use mjlab as a dependency (uv)
 -----------------------------------------
 
 This is our recommended way to use ``mjlab``. You have
@@ -96,7 +96,7 @@ install. These options are interchangeable: you can switch at any time.
          uv add mjlab "mujoco-warp @ git+https://github.com/google-deepmind/mujoco_warp@9fc294d86955a303619a254cefae809a41adb274"
 
       .. note::
-            
+
         ``mujoco-warp`` must be installed from GitHub since it's not available on PyPI.
 
    .. tab-item:: Source
@@ -108,7 +108,7 @@ install. These options are interchangeable: you can switch at any time.
          uv add "mjlab @ git+https://github.com/mujocolab/mjlab" "mujoco-warp @ git+https://github.com/google-deepmind/mujoco_warp@9fc294d86955a303619a254cefae809a41adb274"
 
       .. note::
-            
+
         ``mujoco-warp`` must be installed from GitHub since it's not available on PyPI.
 
    .. tab-item:: Local
@@ -138,7 +138,7 @@ After installation, verify that ``mjlab`` is working by running the demo:
 
 .. _install-uv-develop:
 
-Method 2 – Develop / contribute (uv)
+Method 2 - Develop / contribute (uv)
 ------------------------------------
 
 This method is for developing ``mjlab`` itself or contributing to the project.
@@ -161,7 +161,7 @@ After installation, verify that ``mjlab`` is working by running the demo:
 
 .. _install-pip:
 
-Method 3 – Classic pip / venv / conda
+Method 3 - Classic pip / venv / conda
 -------------------------------------
 
 While ``mjlab`` is designed to work with `uv <https://docs.astral.sh/uv/>`_, you can
@@ -218,7 +218,7 @@ Install mjlab and dependencies via pip
 
       .. note::
 
-         You must install ``mujoco-warp`` from GitHub before running 
+         You must install ``mujoco-warp`` from GitHub before running
          ``pip install -e .`` since it's not available on PyPI and pip cannot resolve
          the GitHub dependency specified in ``pyproject.toml`` (which uses uv-specific
          syntax).
@@ -236,7 +236,7 @@ After installation, verify that ``mjlab`` is working by running the demo:
 
 .. _install-docker:
 
-Method 4 – Docker / clusters
+Method 4 - Docker / clusters
 ----------------------------
 
 This method is recommended if you prefer running ``mjlab`` in containers (for example on
@@ -249,7 +249,7 @@ Prerequisites
 - Install Docker: `Docker installation guide <https://docs.docker.com/engine/install/>`_.
 - Install an appropriate NVIDIA driver for your system and the
   `NVIDIA Container Toolkit <https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html>`_.
-   
+
   - Be sure to register the container runtime with Docker and restart, as described in
     the Docker configuration section of the NVIDIA install guide.
 
@@ -295,6 +295,6 @@ Having some troubles?
 
     Consult the mjlab :ref:`faq` for answers to common installation and runtime issues
 
-2. **Still stuck?** 
+2. **Still stuck?**
 
     Open an issue on GitHub: https://github.com/mujocolab/mjlab/issues

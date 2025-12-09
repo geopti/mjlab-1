@@ -19,14 +19,14 @@ You should already have:
 - created your external project (:ref:`ext-project`)
 - added the CartPole robot (:ref:`new-robot`)
 
-Step 1 – Enter your project
+Step 1 - Enter your project
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: bash
 
    cd path/to/mjlab_cookbook_project
 
-Step 2 – Create the task folder structure
+Step 2 - Create the task folder structure
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You will define a single environment configuration module,
@@ -53,7 +53,7 @@ Concretely:
 The rest of this tutorial will build up the contents of
 ``cartpole_env_cfg.py`` step by step.
 
-Step 3 – Imports, scene, and viewer setup
+Step 3 - Imports, scene, and viewer setup
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Start by adding the core imports, scene configuration, and viewer configuration.
@@ -103,7 +103,7 @@ Edit ``cartpole_env_cfg.py`` and add:
        azimuth=90.0,
    )
 
-Step 4 – Define the actions
+Step 4 - Define the actions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The policy will output position commands for the cart’s sliding joint. These are
@@ -123,7 +123,7 @@ Append to ``cartpole_env_cfg.py``:
            use_default_offset=False,
        )
 
-Step 5 – Define the observations
+Step 5 - Define the observations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The policy observes:
@@ -165,7 +165,7 @@ Append:
        policy: PolicyCfg = field(default_factory=PolicyCfg)
        critic: CriticCfg = field(default_factory=CriticCfg)
 
-Step 6 – Define the rewards
+Step 6 - Define the rewards
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We use two reward terms:
@@ -199,7 +199,7 @@ Append:
            weight=1.0,
        )
 
-Step 7 – Define events (resets and perturbations)
+Step 7 - Define events (resets and perturbations)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Events allow you to reset the state or apply perturbations at specific times.
@@ -243,7 +243,7 @@ Append:
            params={"force_range": (-20.0, 20.0)},
        )
 
-Step 8 – Define terminations
+Step 8 - Define terminations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We terminate episodes when:
@@ -272,7 +272,7 @@ Append:
            time_out=False,
        )
 
-Step 9 – Combine everything into the environment configuration
+Step 9 - Combine everything into the environment configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Now you tie together:
@@ -306,7 +306,7 @@ Append:
        decimation: int = 1
        episode_length_s: float = 10.0
 
-Step 10 – Register the task with Gym
+Step 10 - Register the task with Gym
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Finally, register the environment so that it can be created by Gym (and by
@@ -331,17 +331,17 @@ Edit ``src/mjlab_cookbook_project/tasks/cartpole/__init__.py``:
 This tells Gym how to construct your environment given the ID
 ``"Mjlab-Cartpole"``.
 
-Step 11 – Train the CartPole policy
+Step 11 - Train the CartPole policy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You can now train a policy on the CartPole task.  
+You can now train a policy on the CartPole task.
 Here we increase the number of parallel environments to speed up learning:
 
 .. code-block:: bash
 
    uv run train Mjlab-Cartpole --env.scene.num-envs 1024
 
-Step 12 – Evaluate a trained checkpoint
+Step 12 - Evaluate a trained checkpoint
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Once training has produced a checkpoint, you can run it in inference mode:

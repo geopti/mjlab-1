@@ -11,7 +11,7 @@ Platform Support
 ----------------
 
 Does it work on macOS?
-   Yes, but only with limited performance. mjlab runs on macOS 
+   Yes, but only with limited performance. mjlab runs on macOS
    using **CPU-only** execution through MuJoCo Warp.
 
    - **Training is not recommended on macOS**, as it lacks GPU acceleration.
@@ -51,7 +51,7 @@ Does mjlab support multi-GPU training?
    Yes, mjlab supports **multi-GPU distributed training** using
    `torchrunx <https://github.com/apoorvkh/torchrunx>`_.
 
-   - Use ``--gpu-ids 0 1`` (or ``--gpu-ids all``) when running the ``train`` 
+   - Use ``--gpu-ids 0 1`` (or ``--gpu-ids all``) when running the ``train``
      command.
    - See the :doc:`distributed_training` for configuration details and examples.
 
@@ -72,7 +72,7 @@ My training crashes with NaN errors
    (which is still in beta). mjlab offers two complementary mechanisms to help
    you handle this:
 
-   1. **For training stability** – NaN termination
+   1. **For training stability** - NaN termination
 
    Add a ``nan_detection`` termination to reset environments that hit NaN:
 
@@ -105,7 +105,7 @@ My training crashes with NaN errors
       investigate the **root cause** using ``nan_guard`` in addition to this
       termination.
 
-   2. **For debugging** – NaN guard
+   2. **For debugging** - NaN guard
 
    Enable ``nan_guard`` to capture the simulation state when NaNs occur:
 
@@ -140,8 +140,8 @@ What visualization options are available?
    mjlab currently supports two visualizers for policy evaluation and
    debugging:
 
-   - **Native MuJoCo visualizer** – the built-in visualizer that ships with MuJoCo.
-   - **Viser** – `Viser <https://github.com/nerfstudio-project/viser>`_,
+   - **Native MuJoCo visualizer** - the built-in visualizer that ships with MuJoCo.
+   - **Viser** - `Viser <https://github.com/nerfstudio-project/viser>`_,
      a web-based 3D visualization tool.
 
    We are exploring **training-time visualization** (e.g., live rollout viewers),
@@ -236,7 +236,7 @@ https://github.com/mujocolab/mjlab/issues/100. Check our
 `open issues <https://github.com/mujocolab/mjlab/issues>`_ to see what's actively
 being worked on.
 
-If something isn't working or if we've missed something, please 
+If something isn't working or if we've missed something, please
 `file a bug report <https://github.com/mujocolab/mjlab/issues/new>`_.
 
 .. important::

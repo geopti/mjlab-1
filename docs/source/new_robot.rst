@@ -15,14 +15,14 @@ Prerequisite
 
 We assume you already have an external project set up as in :ref:`ext-project`.
 
-Step 1 – Go to your project
+Step 1 - Go to your project
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: bash
 
    cd path/to/mjlab_cookbook_project
 
-Step 2 – Create the robot folder structure
+Step 2 - Create the robot folder structure
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You will now create a ``robots`` package and a dedicated subpackage for the
@@ -54,7 +54,7 @@ Concretely, you can do:
 You will fill in ``cartpole.xml`` and ``cartpole_constants.py`` in the next
 steps.
 
-Step 3 – Write the CartPole MuJoCo XML
+Step 3 - Write the CartPole MuJoCo XML
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The XML defines the physical model: a cart sliding along the x-axis, with a
@@ -85,7 +85,7 @@ Create ``src/mjlab_cookbook_project/robots/cartpole/xmls/cartpole.xml`` with:
      </keyframe>
    </mujoco>
 
-Step 4 – Define the CartPole configuration in Python
+Step 4 - Define the CartPole configuration in Python
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Now you will wrap the XML into an mjlab ``EntityCfg``. This tells mjlab how to:
@@ -146,7 +146,7 @@ Create
        robot = Entity(CARTPOLE_ROBOT_CFG)
        viewer.launch(robot.spec.compile())
 
-Step 5 – Register the robot in the robots package
+Step 5 - Register the robot in the robots package
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Expose the CartPole configuration from the top-level ``robots`` package so that
@@ -168,7 +168,7 @@ This allows you to import the robot config as:
 
    from mjlab_cookbook_project.robots import CARTPOLE_ROBOT_CFG
 
-Step 6 – Verify the setup
+Step 6 - Verify the setup
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Finally, verify that everything loads correctly. The test script inside
