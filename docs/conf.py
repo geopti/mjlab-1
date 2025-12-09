@@ -137,8 +137,6 @@ html_theme_options = {
   "use_sidenotes": True,
   "logo": {
     "text": "The mjlab Documentation",
-    # "image_light": "source/_static/mjlab-banner.jpg",
-    # "image_dark": "source/_static/mjlab-banner.jpg",
   },
   "icon_links": [
     {
@@ -170,9 +168,6 @@ templates_path = [
 smv_remote_whitelist = r"^.*$"
 smv_branch_whitelist = os.getenv("SMV_BRANCH_WHITELIST", r"^(main|devel)$")
 smv_tag_whitelist = os.getenv("SMV_TAG_WHITELIST", r"^v[1-9]\d*\.\d+\.\d+$")
-# html_sidebars = {
-#     "**": ["navbar-logo.html", "versioning.html", "icon-links.html", "search-field.html", "sbt-sidebar-nav.html"]
-# }
 
 html_sidebars = {
   "**": [
