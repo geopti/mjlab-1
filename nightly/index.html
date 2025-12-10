@@ -214,7 +214,7 @@
     <header>
         <h1>MJLab Nightly Benchmark</h1>
         <div class="header-right">
-            <span class="timestamp">Updated: 2025-12-10 09:28</span>
+            <span class="timestamp">Updated: 2025-12-10 09:30</span>
             <button class="theme-toggle" id="theme-toggle" title="Toggle theme">
                 <span id="theme-icon"></span>
             </button>
@@ -258,11 +258,10 @@
         <details class="info-box">
             <summary>What is this?</summary>
             <p>
-                Measures simulation throughput (steps per second) for different tasks.
-                <strong>Physics FPS</strong> is raw MuJoCo stepping speed (just <code>mj_step</code>).
-                <strong>Env FPS</strong> is the full environment step including observations, rewards,
-                terminations, and resets. <strong>Overhead</strong> is the percentage slowdown from
-                environment logic on top of physics.
+                Measures simulation throughput in <strong>env steps per second</strong> for different tasks.
+                <strong>Physics SPS</strong> is the theoretical max if only physics ran (no managers).
+                <strong>Env SPS</strong> is the actual throughput including observations, rewards, terminations, and resets.
+                <strong>Overhead</strong> is the percentage of time spent on non-physics work.
             </p>
             <p>
                 Note: These benchmarks use zero actions, which causes frequent terminations and resets.
@@ -279,8 +278,8 @@
                         <th>Date</th>
                         <th>Commit</th>
                         <th>Task</th>
-                        <th>Physics FPS</th>
-                        <th>Env FPS</th>
+                        <th>Physics SPS</th>
+                        <th>Env SPS</th>
                         <th>Overhead</th>
                     </tr>
                 </thead>
@@ -534,7 +533,7 @@
         }
 
         // Throughput data and charts
-        const throughputData = [{"created_at": "2025-12-10T17:28:42.244517+00:00", "commit": "7cadcb2", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1966387.8781606653, "env_fps": 255346.3899963911, "overhead_pct": 48.0577778509825}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1043783.181455337, "env_fps": 131565.48512979798, "overhead_pct": 49.58129716313019}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "physics_fps": 2434080.461496996, "env_fps": 456126.1059670245, "overhead_pct": 25.04338074568002}]}];
+        const throughputData = [{"created_at": "2025-12-10T17:28:42.244517+00:00", "commit": "7cadcb2", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1966387.8781606653, "env_fps": 255346.3899963911, "overhead_pct": 48.0577778509825}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "physics_fps": 1043783.181455337, "env_fps": 131565.48512979798, "overhead_pct": 49.58129716313019}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "physics_fps": 2434080.461496996, "env_fps": 456126.1059670245, "overhead_pct": 25.04338074568002}]}, {"created_at": "2025-12-10T17:30:08.049723+00:00", "commit": "d796c83", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "decimation": 4, "physics_sps": 491662.5837157597, "env_sps": 254624.89340964245, "overhead_pct": 48.211456018209766}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "decimation": 4, "physics_sps": 269749.8851076479, "env_sps": 131352.3146457943, "overhead_pct": 51.305886713028215}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "decimation": 4, "physics_sps": 606506.4683336286, "env_sps": 454165.7434250791, "overhead_pct": 25.117741172176512}]}];
         const throughputChartsContainer = document.getElementById('throughput-charts');
         const throughputSummary = document.getElementById('throughput-summary');
         const throughputTbody = document.getElementById('throughput-table-body');
@@ -549,19 +548,22 @@
                 let summaryHtml = `<div class="stat"><div class="stat-label">Total Runs</div><div class="stat-value">${throughputData.length}</div></div>`;
                 latestRun.results.forEach(r => {
                     const taskShort = r.task.replace('Mjlab-', '').replace('-Unitree-', '-');
+                    // Support both old (env_fps) and new (env_sps) field names.
+                    const envSps = r.env_sps ?? r.env_fps;
                     summaryHtml += `
                         <div class="stat">
-                            <div class="stat-label">${taskShort} Env FPS</div>
-                            <div class="stat-value">${(r.env_fps / 1000).toFixed(0)}K</div>
+                            <div class="stat-label">${taskShort} Env SPS</div>
+                            <div class="stat-value">${(envSps / 1000).toFixed(0)}K</div>
                         </div>`;
                 });
                 throughputSummary.innerHTML = summaryHtml;
             }
 
             // Create charts for each metric type
+            // Support both old (fps) and new (sps) field names.
             const throughputMetrics = [
-                ['physics_fps', 'Physics FPS', true],
-                ['env_fps', 'Env FPS', true],
+                ['physics_sps', 'Physics SPS', true],
+                ['env_sps', 'Env SPS', true],
                 ['overhead_pct', 'Overhead %', false]
             ];
 
@@ -588,9 +590,15 @@
                     const data = throughputData.map(run => {
                         const result = run.results.find(r => r.task === task);
                         if (!result) return null;
+                        // Support both old (fps) and new (sps) field names.
+                        let value = result[key];
+                        if (value === undefined) {
+                            const oldKey = key.replace('_sps', '_fps');
+                            value = result[oldKey];
+                        }
                         return {
                             x: new Date(run.created_at),
-                            y: key === 'physics_fps' || key === 'env_fps' ? result[key] / 1000 : result[key],
+                            y: key.includes('_sps') ? value / 1000 : value,
                             commit: run.commit
                         };
                     }).filter(d => d !== null);
@@ -649,7 +657,7 @@
                                 ticks: { maxTicksLimit: 5 },
                                 title: {
                                     display: true,
-                                    text: key.includes('fps') ? 'K steps/sec' : '%',
+                                    text: key.includes('_sps') ? 'K env steps/sec' : '%',
                                     font: { size: 11 }
                                 }
                             }
@@ -665,13 +673,16 @@
                     const commitLink = run.commit && run.commit !== 'unknown'
                         ? `<a href="${GITHUB_REPO}/commit/${run.commit}" target="_blank"><code>${run.commit}</code></a>`
                         : `<code>${run.commit}</code>`;
+                    // Support both old (fps) and new (sps) field names.
+                    const physicsSps = r.physics_sps ?? r.physics_fps;
+                    const envSps = r.env_sps ?? r.env_fps;
                     throughputTbody.innerHTML += `
                         <tr>
                             <td>${i === 0 ? new Date(run.created_at).toLocaleDateString() : ''}</td>
                             <td>${i === 0 ? commitLink : ''}</td>
                             <td>${taskShort}</td>
-                            <td>${(r.physics_fps / 1000).toFixed(0)}K</td>
-                            <td>${(r.env_fps / 1000).toFixed(0)}K</td>
+                            <td>${(physicsSps / 1000).toFixed(0)}K</td>
+                            <td>${(envSps / 1000).toFixed(0)}K</td>
                             <td>${r.overhead_pct.toFixed(1)}%</td>
                         </tr>
                     `;
