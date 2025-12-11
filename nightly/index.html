@@ -214,7 +214,7 @@
     <header>
         <h1>MJLab Nightly Benchmark</h1>
         <div class="header-right">
-            <span class="timestamp">Updated: 2025-12-10 11:50</span>
+            <span class="timestamp">Updated: 2025-12-10 16:01</span>
             <button class="theme-toggle" id="theme-toggle" title="Toggle theme">
                 <span id="theme-icon"></span>
             </button>
@@ -534,7 +534,7 @@
         }
 
         // Throughput data and charts
-        const throughputData = [{"created_at": "2025-12-10T17:30:08.049723+00:00", "commit": "d796c83", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "decimation": 4, "physics_sps": 491662.5837157597, "env_sps": 254624.89340964245, "overhead_pct": 48.211456018209766}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "decimation": 4, "physics_sps": 269749.8851076479, "env_sps": 131352.3146457943, "overhead_pct": 51.305886713028215}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "decimation": 4, "physics_sps": 606506.4683336286, "env_sps": 454165.7434250791, "overhead_pct": 25.117741172176512}]}, {"created_at": "2025-12-10T19:50:00.331804+00:00", "commit": "e683ace", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "decimation": 4, "physics_sps": 491898.2195155051, "env_sps": 255326.14650007396, "overhead_pct": 48.0937038659019}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "decimation": 4, "physics_sps": 265622.5004664957, "env_sps": 131212.05290741305, "overhead_pct": 50.602056423317386}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "decimation": 4, "physics_sps": 609258.7212386446, "env_sps": 456022.56723609794, "overhead_pct": 25.151245055797}]}];
+        const throughputData = [{"created_at": "2025-12-10T17:30:08.049723+00:00", "commit": "d796c83", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "decimation": 4, "physics_sps": 491662.5837157597, "env_sps": 254624.89340964245, "overhead_pct": 48.211456018209766}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "decimation": 4, "physics_sps": 269749.8851076479, "env_sps": 131352.3146457943, "overhead_pct": 51.305886713028215}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "decimation": 4, "physics_sps": 606506.4683336286, "env_sps": 454165.7434250791, "overhead_pct": 25.117741172176512}]}, {"created_at": "2025-12-10T19:50:00.331804+00:00", "commit": "e683ace", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "decimation": 4, "physics_sps": 491898.2195155051, "env_sps": 255326.14650007396, "overhead_pct": 48.0937038659019}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "decimation": 4, "physics_sps": 265622.5004664957, "env_sps": 131212.05290741305, "overhead_pct": 50.602056423317386}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "decimation": 4, "physics_sps": 609258.7212386446, "env_sps": 456022.56723609794, "overhead_pct": 25.151245055797}]}, {"created_at": "2025-12-11T00:01:07.950315+00:00", "commit": "8b756e8", "results": [{"task": "Mjlab-Velocity-Flat-Unitree-Go1", "num_envs": 4096, "num_steps": 200, "decimation": 4, "physics_sps": 490323.82385607105, "env_sps": 255025.57842557775, "overhead_pct": 47.988336275408564}, {"task": "Mjlab-Tracking-Flat-Unitree-G1", "num_envs": 4096, "num_steps": 200, "decimation": 4, "physics_sps": 267358.4255343721, "env_sps": 131295.34840309073, "overhead_pct": 50.891636146992816}, {"task": "Mjlab-Lift-Cube-Yam", "num_envs": 4096, "num_steps": 200, "decimation": 4, "physics_sps": 606597.8374708907, "env_sps": 454298.2509270404, "overhead_pct": 25.107175979861417}]}];
         const throughputChartsContainer = document.getElementById('throughput-charts');
         const throughputSummary = document.getElementById('throughput-summary');
         const throughputTbody = document.getElementById('throughput-table-body');
@@ -549,19 +549,16 @@
                 let summaryHtml = `<div class="stat"><div class="stat-label">Total Runs</div><div class="stat-value">${throughputData.length}</div></div>`;
                 latestRun.results.forEach(r => {
                     const taskShort = r.task.replace('Mjlab-', '').replace('-Unitree-', '-');
-                    // Support both old (env_fps) and new (env_sps) field names.
-                    const envSps = r.env_sps ?? r.env_fps;
                     summaryHtml += `
                         <div class="stat">
                             <div class="stat-label">${taskShort} Env SPS</div>
-                            <div class="stat-value">${(envSps / 1000).toFixed(0)}K</div>
+                            <div class="stat-value">${(r.env_sps / 1000).toFixed(0)}K</div>
                         </div>`;
                 });
                 throughputSummary.innerHTML = summaryHtml;
             }
 
             // Create charts for each metric type
-            // Support both old (fps) and new (sps) field names.
             const throughputMetrics = [
                 ['physics_sps', 'Physics SPS', true],
                 ['env_sps', 'Env SPS', true],
@@ -591,12 +588,7 @@
                     const data = throughputData.map(run => {
                         const result = run.results.find(r => r.task === task);
                         if (!result) return null;
-                        // Support both old (fps) and new (sps) field names.
-                        let value = result[key];
-                        if (value === undefined) {
-                            const oldKey = key.replace('_sps', '_fps');
-                            value = result[oldKey];
-                        }
+                        const value = result[key];
                         return {
                             x: new Date(run.created_at),
                             y: key.includes('_sps') ? value / 1000 : value,
@@ -674,16 +666,13 @@
                     const commitLink = run.commit && run.commit !== 'unknown'
                         ? `<a href="${GITHUB_REPO}/commit/${run.commit}" target="_blank"><code>${run.commit}</code></a>`
                         : `<code>${run.commit}</code>`;
-                    // Support both old (fps) and new (sps) field names.
-                    const physicsSps = r.physics_sps ?? r.physics_fps;
-                    const envSps = r.env_sps ?? r.env_fps;
                     throughputTbody.innerHTML += `
                         <tr>
                             <td>${i === 0 ? new Date(run.created_at).toLocaleDateString() : ''}</td>
                             <td>${i === 0 ? commitLink : ''}</td>
                             <td>${taskShort}</td>
-                            <td>${(physicsSps / 1000).toFixed(0)}K</td>
-                            <td>${(envSps / 1000).toFixed(0)}K</td>
+                            <td>${(r.physics_sps / 1000).toFixed(0)}K</td>
+                            <td>${(r.env_sps / 1000).toFixed(0)}K</td>
                             <td>${r.overhead_pct.toFixed(1)}%</td>
                         </tr>
                     `;
