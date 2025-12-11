@@ -85,6 +85,7 @@ class ViserMujocoScene(DebugVisualizer):
   mj_model: mujoco.MjModel
   mj_data: mujoco.MjData
   num_envs: int
+  mj_spec: mujoco.MjSpec | None = None
 
   # Handles (created once).
   fixed_bodies_frame: viser.SceneNodeHandle = field(init=False)
@@ -117,6 +118,12 @@ class ViserMujocoScene(DebugVisualizer):
   _last_mocap_quat: np.ndarray | None = None
   _last_env_idx: int = 0
   _last_contacts: list[_Contact] | None = None
+
+  # Per-body batched scales for geom size randomization.
+  # Maps (body_id, group_id) -> (num_envs, 3) scale array.
+  _body_batched_scales: dict[tuple[int, int], np.ndarray] = field(
+    default_factory=dict, init=False
+  )
 
   # Debug visualization (arrows, ghosts, frames).
   debug_visualization_enabled: bool = False
@@ -151,6 +158,7 @@ class ViserMujocoScene(DebugVisualizer):
     server: viser.ViserServer,
     mj_model: mujoco.MjModel,
     num_envs: int,
+    mj_spec: mujoco.MjSpec | None = None,
   ) -> ViserMujocoScene:
     """Create and populate scene with geometry.
 
@@ -161,6 +169,9 @@ class ViserMujocoScene(DebugVisualizer):
       server: Viser server instance.
       mj_model: MuJoCo model.
       num_envs: Number of parallel environments.
+      mj_spec: Optional MuJoCo spec for dynamic geom size updates. If provided,
+        update_geom_sizes() can be called to update visualization when geom
+        sizes change (e.g., from domain randomization).
 
     Returns:
       ViserMujocoScene instance with scene populated.
@@ -172,6 +183,7 @@ class ViserMujocoScene(DebugVisualizer):
       mj_model=mj_model,
       mj_data=mj_data,
       num_envs=num_envs,
+      mj_spec=mj_spec,
     )
 
     # Initialize debug visualization data.
@@ -536,9 +548,20 @@ class ViserMujocoScene(DebugVisualizer):
             single_quat = body_xquat[env_idx, body_id, :]
             handle.batched_positions = np.tile(single_pos[None, :], (self.num_envs, 1))
             handle.batched_wxyzs = np.tile(single_quat[None, :], (self.num_envs, 1))
+            # Also tile scales if this body has per-env scales.
+            key = (body_id, _group_id)
+            if key in self._body_batched_scales:
+              single_scale = self._body_batched_scales[key][env_idx]
+              handle.batched_scales = np.tile(
+                single_scale[None, :], (self.num_envs, 1)
+              ).astype(np.float32)
           else:
             handle.batched_positions = body_xpos[..., body_id, :] + scene_offset
             handle.batched_wxyzs = body_xquat[..., body_id, :]
+            # Restore per-env scales if available.
+            key = (body_id, _group_id)
+            if key in self._body_batched_scales:
+              handle.batched_scales = self._body_batched_scales[key]
       if contacts is not None:
         self._update_contact_visualization(contacts, scene_offset)
 
@@ -709,6 +732,122 @@ class ViserMujocoScene(DebugVisualizer):
           visible=visible,
         )
         self.mesh_handles_by_group[(body_id, group_id)] = handle
+
+  def update_geom_sizes(self, all_geom_sizes: np.ndarray, env_idx: int = 0) -> None:
+    """Update mesh handles with new geom sizes from simulation.
+
+    This method updates batched_scales for all environments to reflect per-env
+    geom size randomization. For the tracked env, it also recompiles the model
+    to ensure correct contact visualization.
+
+    Only recompiles if sizes have actually changed, so it's safe to call
+    frequently (e.g., on every reset).
+
+    Args:
+      all_geom_sizes: Array of shape (num_envs, num_geoms, 3) with geom sizes.
+      env_idx: Environment index used for contact visualization (recompilation).
+    """
+    if self.mj_spec is None:
+      return
+
+    # Get the tracked env's sizes for recompilation.
+    tracked_env_sizes = all_geom_sizes[env_idx]
+
+    # Copy the spec so we don't modify the original.
+    spec_copy = self.mj_spec.copy()
+
+    # Build a mapping from geom name to spec geom.
+    spec_geoms_by_name: dict[str, mujoco.MjsGeom] = {}
+    for geom in spec_copy.geoms:
+      if geom.name:
+        spec_geoms_by_name[geom.name] = geom
+
+    # Track which body IDs have changed geoms (for the tracked env).
+    changed_body_ids: set[int] = set()
+
+    # Update geom sizes in the spec copy for the tracked env.
+    for geom_id in range(self.mj_model.ngeom):
+      geom_name = mj_id2name(self.mj_model, mjtObj.mjOBJ_GEOM, geom_id)
+      if not geom_name or geom_name not in spec_geoms_by_name:
+        continue
+
+      # Check if size has changed for tracked env.
+      old_size = self.mj_model.geom_size[geom_id]
+      new_size = tracked_env_sizes[geom_id]
+      if not np.allclose(old_size, new_size):
+        spec_geoms_by_name[geom_name].size[:] = new_size
+        changed_body_ids.add(self.mj_model.geom_bodyid[geom_id])
+
+    if not changed_body_ids:
+      return
+
+    # Recompile the model with updated sizes for the tracked env.
+    new_mj_model = spec_copy.compile()
+    self.mj_model = new_mj_model
+    self.mj_data = mujoco.MjData(new_mj_model)
+    self._viz_data = mujoco.MjData(new_mj_model)
+
+    # Recreate mesh handles for changed bodies.
+    with self.server.atomic():
+      for (body_id, group_id), handle in list(self.mesh_handles_by_group.items()):
+        if body_id not in changed_body_ids:
+          continue
+
+        # Remove old handle.
+        handle.remove()
+
+        # Find geoms for this body and group.
+        geom_indices = []
+        for i in range(new_mj_model.ngeom):
+          if (
+            new_mj_model.geom_bodyid[i] == body_id
+            and new_mj_model.geom_group[i] == group_id
+            and not is_fixed_body(new_mj_model, body_id)
+          ):
+            geom_indices.append(i)
+
+        if not geom_indices:
+          del self.mesh_handles_by_group[(body_id, group_id)]
+          continue
+
+        # Compute per-env scales relative to tracked env's mesh.
+        # The mesh is built with tracked env's sizes, so tracked env scale = 1.
+        # Other envs scale = their_size / tracked_env_size.
+        tracked_env_geom_sizes = tracked_env_sizes[geom_indices]  # (n_geoms, 3)
+        # For simplicity, use the first geom's size ratio as the body scale.
+        # This works well for single-geom bodies like the cube.
+        base_size = tracked_env_geom_sizes[0]  # (3,)
+        all_env_geom_sizes = all_geom_sizes[:, geom_indices[0], :]  # (num_envs, 3)
+
+        # Compute scale ratios, avoiding division by zero.
+        with np.errstate(divide="ignore", invalid="ignore"):
+          batched_scales = np.where(
+            base_size > 0, all_env_geom_sizes / base_size, 1.0
+          ).astype(np.float32)  # (num_envs, 3)
+
+        # Store scales for use in _update_visualization (for show_only_selected).
+        self._body_batched_scales[(body_id, group_id)] = batched_scales
+
+        # Recreate mesh with new sizes and per-env scales.
+        body_name = get_body_name(new_mj_model, body_id)
+        mesh = merge_geoms(new_mj_model, geom_indices)
+        lod_ratio = 1000.0 / mesh.vertices.shape[0]
+        visible = group_id < 6 and self.geom_groups_visible[group_id]
+
+        new_handle = self.server.scene.add_batched_meshes_trimesh(
+          f"/bodies/{body_name}/group{group_id}",
+          mesh,
+          batched_wxyzs=np.array([1.0, 0.0, 0.0, 0.0])[None].repeat(
+            self.num_envs, axis=0
+          ),
+          batched_positions=np.array([0.0, 0.0, 0.0])[None].repeat(
+            self.num_envs, axis=0
+          ),
+          batched_scales=batched_scales,
+          lod=((2.0, lod_ratio),) if lod_ratio < 0.5 else "off",
+          visible=visible,
+        )
+        self.mesh_handles_by_group[(body_id, group_id)] = new_handle
 
   def _extract_contacts_from_mjdata(self, mj_data: mujoco.MjData) -> list[_Contact]:
     """Extract contact data from given MuJoCo data."""

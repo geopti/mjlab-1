@@ -41,10 +41,12 @@ class ViserPlayViewer(BaseViewer):
     self._needs_update = False
 
     # Create ViserMujocoScene for all 3D visualization (with debug visualization enabled).
+    # Pass scene spec to enable dynamic geom size updates for domain randomization.
     self._scene = ViserMujocoScene.create(
       server=self._server,
       mj_model=sim.mj_model,
       num_envs=self.env.num_envs,
+      mj_spec=self.env.unwrapped.scene.spec,
     )
 
     self._scene.env_idx = self.cfg.env_idx
@@ -164,6 +166,11 @@ class ViserPlayViewer(BaseViewer):
 
     def update_scene() -> None:
       with self._server.atomic():
+        # Update geom sizes from simulation model for all environments.
+        # This handles domain randomization of geom sizes.
+        all_geom_sizes = sim.model.geom_size.cpu().numpy()
+        self._scene.update_geom_sizes(all_geom_sizes, self._scene.env_idx)
+
         self._scene.update(sim.wp_data)
         self._server.flush()
 
