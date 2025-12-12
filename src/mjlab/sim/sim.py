@@ -127,16 +127,21 @@ class Simulation:
 
     self._model_bridge = WarpBridge(self._wp_model, nworld=self.num_envs)
     self._data_bridge = WarpBridge(self._wp_data)
-    
+
     import ctypes
+
     libcuda = ctypes.CDLL("libcuda.so")
     version = ctypes.c_int()
     libcuda.cuDriverGetVersion(ctypes.byref(version))
-    driver_cuda_version = float(f"{version.value // 1000}.{(version.value % 1000) // 10}")
+    driver_cuda_version = float(
+      f"{version.value // 1000}.{(version.value % 1000) // 10}"
+    )
 
-    self.use_cuda_graph = self.wp_device.is_cuda and wp.is_mempool_enabled(
-      self.wp_device
-    ) if driver_cuda_version >= 12.4 else False
+    self.use_cuda_graph = (
+      self.wp_device.is_cuda and wp.is_mempool_enabled(self.wp_device)
+      if driver_cuda_version >= 12.4
+      else False
+    )
     self.create_graph()
 
     self.nan_guard = NanGuard(cfg.nan_guard, self.num_envs, self._mj_model)
