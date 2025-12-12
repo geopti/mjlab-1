@@ -130,18 +130,28 @@ class Simulation:
 
     import ctypes
 
-    libcuda = ctypes.CDLL("libcuda.so")
-    version = ctypes.c_int()
-    libcuda.cuDriverGetVersion(ctypes.byref(version))
-    driver_cuda_version = float(
-      f"{version.value // 1000}.{(version.value % 1000) // 10}"
-    )
+    try:
+      libcuda = ctypes.CDLL("libcuda.so")
+    except OSError:
+      print("[ERROR] Unable to find libcuda.so.")
+      libcuda = None
 
-    self.use_cuda_graph = (
-      self.wp_device.is_cuda and wp.is_mempool_enabled(self.wp_device)
-      if driver_cuda_version >= 12.4
-      else False
-    )
+    if libcuda is not None:
+      version = ctypes.c_int()
+      libcuda.cuDriverGetVersion(ctypes.byref(version))
+      driver_cuda_version = float(
+        f"{version.value // 1000}.{(version.value % 1000) // 10}"
+      )
+
+      self.use_cuda_graph = (
+        self.wp_device.is_cuda and wp.is_mempool_enabled(self.wp_device)
+        if driver_cuda_version >= 12.4
+        else False
+      )
+    else:
+      print("[WARNING] CUDA driver not available, disabling CUDA graphs.")
+      self.use_cuda_graph = False
+
     self.create_graph()
 
     self.nan_guard = NanGuard(cfg.nan_guard, self.num_envs, self._mj_model)
