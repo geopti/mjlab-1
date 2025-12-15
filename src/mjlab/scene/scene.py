@@ -156,6 +156,10 @@ class Scene:
     if self._render_manager is not None:
       self._render_manager.render()
 
+  def recreate_render_graph(self) -> None:
+    if self._render_manager is not None:
+      self._render_manager.create_graph()
+
   def write_data_to_sim(self) -> None:
     for ent in self._entities.values():
       ent.write_data_to_sim()
