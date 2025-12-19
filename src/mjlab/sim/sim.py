@@ -139,9 +139,13 @@ class Simulation:
       and driver_ver >= _MIN_DRIVER_FOR_CONDITIONAL_GRAPHS
     )
 
+    if self.use_cuda_graph:
+      print("Warming up CUDA kernels...")
+      mjwarp.step(self.wp_model, self.wp_data)
+      wp.synchronize()
     else:
-      print("[WARNING] CUDA driver not available, disabling CUDA graphs.")
-      self.use_cuda_graph = False
+      print(f"[WARNING] Disabling CUDA Graphs. Current Driver {driver_ver} < 12.4.")
+      print("           mujoco_warp solver requires 12.4+ for graph loops.")
 
     self.create_graph()
 
