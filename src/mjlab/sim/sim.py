@@ -18,6 +18,9 @@ else:
   ModelBridge = WarpBridge
   DataBridge = WarpBridge
 
+# mujoco_warp uses 'wp.capture_while' which strictly requires Driver 12.4+
+_MIN_DRIVER_FOR_CONDITIONAL_GRAPHS = 12.4
+
 _JACOBIAN_MAP = {
   "auto": mujoco.mjtJacobian.mjJAC_AUTO,
   "dense": mujoco.mjtJacobian.mjJAC_DENSE,
@@ -128,26 +131,14 @@ class Simulation:
     self._model_bridge = WarpBridge(self._wp_model, nworld=self.num_envs)
     self._data_bridge = WarpBridge(self._wp_data)
 
-    import ctypes
+    driver_ver = wp.context.runtime.driver_version
+    driver_ver = float(f"{driver_ver[0]}.{driver_ver[1]}")
+    self.use_cuda_graph = (
+      self.wp_device.is_cuda
+      and wp.is_mempool_enabled(self.wp_device)
+      and driver_ver >= _MIN_DRIVER_FOR_CONDITIONAL_GRAPHS
+    )
 
-    try:
-      libcuda = ctypes.CDLL("libcuda.so")
-    except OSError:
-      print("[ERROR] Unable to find libcuda.so.")
-      libcuda = None
-
-    if libcuda is not None:
-      version = ctypes.c_int()
-      libcuda.cuDriverGetVersion(ctypes.byref(version))
-      driver_cuda_version = float(
-        f"{version.value // 1000}.{(version.value % 1000) // 10}"
-      )
-
-      self.use_cuda_graph = (
-        self.wp_device.is_cuda and wp.is_mempool_enabled(self.wp_device)
-        if driver_cuda_version >= 12.4
-        else False
-      )
     else:
       print("[WARNING] CUDA driver not available, disabling CUDA graphs.")
       self.use_cuda_graph = False
