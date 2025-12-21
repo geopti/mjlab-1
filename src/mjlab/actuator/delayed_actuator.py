@@ -83,6 +83,11 @@ class DelayedActuator(Actuator):
     self._base_actuator = base_actuator
     self._delay_buffers: dict[str, DelayBuffer] = {}
 
+  @property
+  def base_actuator(self) -> Actuator:
+    """The underlying actuator being wrapped."""
+    return self._base_actuator
+
   def edit_spec(self, spec: mujoco.MjSpec, joint_names: list[str]) -> None:
     self._base_actuator.edit_spec(spec, joint_names)
     self._mjs_actuators = self._base_actuator._mjs_actuators
@@ -148,6 +153,20 @@ class DelayedActuator(Actuator):
     for buffer in self._delay_buffers.values():
       buffer.reset(env_ids)
     self._base_actuator.reset(env_ids)
+
+  def set_lags(
+    self,
+    lags: torch.Tensor,
+    env_ids: torch.Tensor | slice | None = None,
+  ) -> None:
+    """Set delay lag values for specified environments.
+
+    Args:
+      lags: Lag values in physics timesteps. Shape: (num_env_ids,) or scalar.
+      env_ids: Environment indices to set. If None, sets all environments.
+    """
+    for buffer in self._delay_buffers.values():
+      buffer.set_lags(lags, env_ids)
 
   def update(self, dt: float) -> None:
     self._base_actuator.update(dt)

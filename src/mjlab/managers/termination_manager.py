@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import TYPE_CHECKING, Sequence
 
 import torch
@@ -22,7 +23,7 @@ class TerminationManager(ManagerBase):
     self._term_cfgs: list[TerminationTermCfg] = list()
     self._class_term_cfgs: list[TerminationTermCfg] = list()
 
-    self.cfg = cfg
+    self.cfg = deepcopy(cfg)
     super().__init__(env)
 
     self._term_dones = dict()
@@ -97,6 +98,11 @@ class TerminationManager(ManagerBase):
 
   def get_term(self, name: str) -> torch.Tensor:
     return self._term_dones[name]
+
+  def get_term_cfg(self, term_name: str) -> TerminationTermCfg:
+    if term_name not in self._term_names:
+      raise ValueError(f"Term '{term_name}' not found in active terms.")
+    return self._term_cfgs[self._term_names.index(term_name)]
 
   def get_active_iterable_terms(
     self, env_idx: int

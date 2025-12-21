@@ -326,13 +326,125 @@ def create_primitive_mesh(mj_model: mujoco.MjModel, geom_id: int) -> trimesh.Tri
   Returns:
     Trimesh representation of the primitive geom
   """
-  return _create_shape_mesh(
-    shape_type=mj_model.geom_type[geom_id],
-    size=mj_model.geom_size[geom_id],
-    rgba=mj_model.geom_rgba[geom_id].copy(),
-    mj_model=mj_model,
-    geom_id=geom_id,
-  )
+  size = mj_model.geom_size[geom_id]
+  geom_type = mj_model.geom_type[geom_id]
+  rgba = mj_model.geom_rgba[geom_id].copy()
+
+  # Convert rgba to uint8 for vertex colors.
+  rgba_uint8 = (np.clip(rgba, 0, 1) * 255).astype(np.uint8)
+
+  if geom_type == mjtGeom.mjGEOM_SPHERE:
+    mesh = trimesh.creation.icosphere(radius=size[0], subdivisions=2)
+  elif geom_type == mjtGeom.mjGEOM_BOX:
+    mesh = trimesh.creation.box(extents=2.0 * size)
+  elif geom_type == mjtGeom.mjGEOM_CAPSULE:
+    mesh = trimesh.creation.capsule(radius=size[0], height=2.0 * size[1])
+  elif geom_type == mjtGeom.mjGEOM_CYLINDER:
+    mesh = trimesh.creation.cylinder(radius=size[0], height=2.0 * size[1])
+  elif geom_type == mjtGeom.mjGEOM_PLANE:
+    mesh = trimesh.creation.box((20, 20, 0.01))
+  elif geom_type == mjtGeom.mjGEOM_ELLIPSOID:
+    mesh = trimesh.creation.icosphere(subdivisions=3, radius=1.0)
+    mesh.apply_scale(size)
+  elif geom_type == mjtGeom.mjGEOM_HFIELD:
+    # Which heightfield does this geom use?
+    hfield_id = mj_model.geom_dataid[geom_id]
+    nrow = mj_model.hfield_nrow[hfield_id]
+    ncol = mj_model.hfield_ncol[hfield_id]
+    sx, sy, sz, base = mj_model.hfield_size[hfield_id]
+
+    # Compute offset into the flat hfield_data array.
+    offset = 0
+    for k in range(hfield_id):
+      offset += mj_model.hfield_nrow[k] * mj_model.hfield_ncol[k]
+    hfield = mj_model.hfield_data[offset : offset + nrow * ncol].reshape(nrow, ncol)
+
+    # MuJoCo heightfield: ncol samples in x direction, nrow samples in y direction.
+    # data[r, c] is at position (x[c], y[r]) - columns map to x, rows map to y.
+    x = np.linspace(-sx, sx, ncol)
+    y = np.linspace(-sy, sy, nrow)
+    xx, yy = np.meshgrid(x, y)  # 'xy' indexing: xx[r,c]=x[c], yy[r,c]=y[r]
+    # MuJoCo heightfield z formula: z = data * sz (elevation)
+    zz = hfield * sz
+
+    vertices = np.column_stack((xx.ravel(), yy.ravel(), zz.ravel()))
+
+    faces = []
+    for r in range(nrow - 1):
+      for c in range(ncol - 1):
+        # Vertex indices for quad at grid position [r, c]
+        i0 = r * ncol + c  # [r, c]     -> (x[c], y[r])
+        i1 = i0 + 1  # [r, c+1]   -> (x[c+1], y[r])
+        i2 = i0 + ncol  # [r+1, c]   -> (x[c], y[r+1])
+        i3 = i2 + 1  # [r+1, c+1] -> (x[c+1], y[r+1])
+        # Counter-clockwise winding when viewed from above for upward-pointing normals.
+        faces.append([i0, i1, i3])
+        faces.append([i0, i3, i2])
+    faces = np.array(faces, dtype=np.int64)
+    mesh = trimesh.Trimesh(vertices=vertices, faces=faces, process=False)
+
+    # Color by height using the same HSV algorithm as color_by_height in heightfield_terrains.py.
+    # Normalize z values to [0, 1] range.
+    zz_min = zz.min()
+    zz_max = zz.max()
+    if zz_max > zz_min:
+      normalized = (zz - zz_min) / (zz_max - zz_min)
+    else:
+      normalized = np.full_like(zz, 0.5)
+
+    # HSV color scheme (same as color_by_height in heightfield_terrains.py).
+    hue = 0.5 - normalized * 0.45
+    saturation = 0.6 - normalized * 0.2
+    value = 0.4 + normalized * 0.3
+
+    # HSV to RGB conversion.
+    c = value * saturation
+    x = c * (1 - np.abs((hue * 6) % 2 - 1))
+    m = value - c
+
+    hue_sector = (hue * 6).astype(int) % 6
+
+    r = np.zeros_like(hue)
+    g = np.zeros_like(hue)
+    b = np.zeros_like(hue)
+
+    mask = hue_sector == 0
+    r[mask], g[mask] = c[mask], x[mask]
+    mask = hue_sector == 1
+    r[mask], g[mask] = x[mask], c[mask]
+    mask = hue_sector == 2
+    g[mask], b[mask] = c[mask], x[mask]
+    mask = hue_sector == 3
+    g[mask], b[mask] = x[mask], c[mask]
+    mask = hue_sector == 4
+    r[mask], b[mask] = x[mask], c[mask]
+    mask = hue_sector == 5
+    r[mask], b[mask] = c[mask], x[mask]
+
+    r += m
+    g += m
+    b += m
+
+    # Convert to uint8 vertex colors.
+    r_uint8 = (np.clip(r, 0, 1) * 255).astype(np.uint8)
+    g_uint8 = (np.clip(g, 0, 1) * 255).astype(np.uint8)
+    b_uint8 = (np.clip(b, 0, 1) * 255).astype(np.uint8)
+    a_uint8 = np.full_like(r_uint8, 255)
+
+    vertex_colors = np.column_stack(
+      [r_uint8.ravel(), g_uint8.ravel(), b_uint8.ravel(), a_uint8.ravel()]
+    )
+
+    mesh.visual = trimesh.visual.ColorVisuals(mesh=mesh, vertex_colors=vertex_colors)
+    return mesh
+  else:
+    raise ValueError(f"Unsupported primitive geom type: {geom_type}")
+
+  # Use ColorVisuals for all primitives to ensure compatibility when merging.
+  vertex_colors = np.tile(rgba_uint8, (len(mesh.vertices), 1))
+  mesh.visual = trimesh.visual.ColorVisuals(mesh=mesh, vertex_colors=vertex_colors)
+  return mesh
+
 
 
 def merge_geoms(mj_model: mujoco.MjModel, geom_ids: list[int]) -> trimesh.Trimesh:
@@ -431,10 +543,15 @@ def rotation_matrix_from_vectors(
 
 
 def is_fixed_body(mj_model: mujoco.MjModel, body_id: int) -> bool:
-  """Check if a body is fixed (welded to world)."""
-  if mj_model.body_mocapid[body_id] >= 0:
-    return False
-  return mj_model.body_weldid[body_id] == 0
+  """Check if a body is fixed (welded to world and not attached to mocap).
+
+  A body is considered fixed if it's welded to world AND its kinematic root
+  is not a mocap body. This ensures bodies attached to mocap bodies move with them.
+  """
+  is_weld = mj_model.body_weldid[body_id] == 0
+  root_id = mj_model.body_rootid[body_id]
+  root_is_mocap = mj_model.body_mocapid[root_id] >= 0
+  return is_weld and not root_is_mocap
 
 
 def get_body_name(mj_model: mujoco.MjModel, body_id: int) -> str:

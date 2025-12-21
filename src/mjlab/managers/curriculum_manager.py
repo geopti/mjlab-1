@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Sequence
 
 import torch
@@ -22,7 +23,7 @@ class CurriculumManager(ManagerBase):
     self._term_cfgs: list[CurriculumTermCfg] = list()
     self._class_term_cfgs: list[CurriculumTermCfg] = list()
 
-    self.cfg = cfg
+    self.cfg = deepcopy(cfg)
     super().__init__(env)
 
     self._curriculum_state = dict()
@@ -46,6 +47,13 @@ class CurriculumManager(ManagerBase):
   @property
   def active_terms(self) -> list[str]:
     return self._term_names
+
+  # Methods.
+
+  def get_term_cfg(self, term_name: str) -> CurriculumTermCfg:
+    if term_name not in self._term_names:
+      raise ValueError(f"Term '{term_name}' not found in active terms.")
+    return self._term_cfgs[self._term_names.index(term_name)]
 
   def get_active_iterable_terms(
     self, env_idx: int

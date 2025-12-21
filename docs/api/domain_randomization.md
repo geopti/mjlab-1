@@ -57,7 +57,7 @@ This flag is especially useful when using custom class-based event terms instead
 ## Available Fields
 
 **Joint/DOF:** `dof_armature`, `dof_frictionloss`, `dof_damping`, `jnt_range`,
-`jnt_stiffness`, `qpos0`
+`jnt_stiffness`
 
 **Body:** `body_mass`, `body_ipos`, `body_iquat`, `body_inertia`, `body_pos`,
 `body_quat`
@@ -127,21 +127,25 @@ robot_collision = CollisionCfg(
 )
 ```
 
-### Joint Offset (startup)
+### Encoder Bias (startup)
 
-Randomize default joint positions to simulate joint offset calibration errors:
+Simulate joint encoder calibration errors. Real encoders have small offsets
+from manufacturing/calibration, so the policy should be robust to them.
+
+**How it works:** The bias is added to position observations and subtracted from
+position commands. The policy sees `observed_pos = true_pos + bias` and commands
+`target = command - bias`. This ensures joint limits apply to the true physical
+position, not the biased reading.
 
 ```python
-joint_offset: EventTerm = term(
+encoder_bias: EventTerm = term(
     EventTerm,
     mode="startup",
-    func=mdp.randomize_field,
+    func=mdp.randomize_encoder_bias,
     domain_randomization=True,
     params={
-        "asset_cfg": SceneEntityCfg("robot", joint_names=[".*"]),
-        "field": "qpos0",
-        "ranges": (-0.01, 0.01),
-        "operation": "add",
+        "asset_cfg": SceneEntityCfg("robot"),
+        "bias_range": (-0.01, 0.01),
     },
 )
 ```
@@ -199,6 +203,37 @@ terrain_friction: EventTerm = term(
     params={"field": "geom_friction", "ranges": (0.3, 1.2)},
 )
 ```
+
+## Internals: Model Field Expansion and CUDA Graphs
+
+### How MuJoCo Warp handles per-world model parameters
+
+By default, model arrays have shape `(1, n...)` with **stride 0** in the first
+dimension — any index in that dimension returns the same memory, so all worlds
+share identical values. Kernels also use **modulo indexing**
+(`array[worldid % array.shape[0], ...]`) for explicit safety.
+
+When you enable domain randomization, mjlab calls `expand_model_fields()` to:
+1. Allocate a new array with shape `(nworld, n...)` and normal strides
+2. Copy the original values to all worlds
+3. Replace the model attribute with the new array via `setattr()`
+
+After expansion, each world has its own slice, allowing per-environment
+randomization.
+
+### Why CUDA graphs must be recreated
+
+On CUDA devices, mjlab captures CUDA graphs for `step()`, `forward()`, and
+`reset()` to minimize kernel launch overhead. A captured graph bakes in the
+memory addresses of arrays at capture time.
+
+When `expand_model_fields()` replaces an array, the old address becomes stale.
+If the graph isn't recreated, it silently reads from the old (shared) array so
+your randomized values are ignored and all worlds simulate with identical
+parameters.
+
+mjlab handles this automatically: `expand_model_fields()` re-captures all CUDA
+graphs after replacing arrays.
 
 ## Migrating from Isaac Lab
 

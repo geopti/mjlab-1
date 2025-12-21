@@ -1,5 +1,6 @@
 """Observation manager for computing observations."""
 
+from copy import deepcopy
 from typing import Sequence
 
 import numpy as np
@@ -14,7 +15,7 @@ from mjlab.utils.noise import noise_cfg, noise_model
 
 class ObservationManager(ManagerBase):
   def __init__(self, cfg: dict[str, ObservationGroupCfg], env):
-    self.cfg = cfg
+    self.cfg = deepcopy(cfg)
     super().__init__(env=env)
 
     self._group_obs_dim: dict[str, tuple[int, ...] | list[tuple[int, ...]]] = dict()
@@ -121,7 +122,18 @@ class ObservationManager(ManagerBase):
 
   # Methods.
 
+  def get_term_cfg(self, group_name: str, term_name: str) -> ObservationTermCfg:
+    if group_name not in self._group_obs_term_names:
+      raise ValueError(f"Group '{group_name}' not found in active groups.")
+    if term_name not in self._group_obs_term_names[group_name]:
+      raise ValueError(f"Term '{term_name}' not found in group '{group_name}'.")
+    index = self._group_obs_term_names[group_name].index(term_name)
+    return self._group_obs_term_cfgs[group_name][index]
+
   def reset(self, env_ids: torch.Tensor | slice | None = None) -> dict[str, float]:
+    # Invalidate cache since reset envs will have different observations.
+    self._obs_buffer = None
+
     for group_name, group_cfg in self._group_obs_class_term_cfgs.items():
       for term_cfg in group_cfg:
         term_cfg.func.reset(env_ids=env_ids)
@@ -142,6 +154,12 @@ class ObservationManager(ManagerBase):
   def compute(
     self, update_history: bool = False
   ) -> dict[str, torch.Tensor | dict[str, torch.Tensor]]:
+    # Return cached observations if not updating and cache exists.
+    # This prevents double-pushing to delay buffers when compute() is called
+    # multiple times per control step (e.g., in get_observations() after step()).
+    if not update_history and self._obs_buffer is not None:
+      return self._obs_buffer
+
     obs_buffer: dict[str, torch.Tensor | dict[str, torch.Tensor]] = dict()
     for group_name in self._group_obs_term_names:
       obs_buffer[group_name] = self.compute_group(group_name, update_history)
@@ -226,6 +244,9 @@ class ObservationManager(ManagerBase):
           print(f"term: {term_name} set to None, skipping...")
           continue
 
+        # NOTE: This deepcopy is important to avoid cross-group contamination of term
+        # configs.
+        term_cfg = deepcopy(term_cfg)
         self._resolve_common_term_cfg(term_name, term_cfg)
 
         if not group_cfg.enable_corruption:
