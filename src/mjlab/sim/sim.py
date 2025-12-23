@@ -18,8 +18,8 @@ else:
   ModelBridge = WarpBridge
   DataBridge = WarpBridge
 
-# mujoco_warp uses 'wp.capture_while' which strictly requires Driver 12.4+
-_MIN_DRIVER_FOR_CONDITIONAL_GRAPHS = 12.4
+# Minimum CUDA driver version supported for conditional CUDA graphs.
+_GRAPH_CAPTURE_MIN_DRIVER = (12, 4)
 
 _JACOBIAN_MAP = {
   "auto": mujoco.mjtJacobian.mjJAC_AUTO,
@@ -131,18 +131,7 @@ class Simulation:
     self._model_bridge = WarpBridge(self._wp_model, nworld=self.num_envs)
     self._data_bridge = WarpBridge(self._wp_data)
 
-    driver_ver = wp.context.runtime.driver_version
-    driver_ver = float(f"{driver_ver[0]}.{driver_ver[1]}")
-    self.use_cuda_graph = (
-      self.wp_device.is_cuda
-      and wp.is_mempool_enabled(self.wp_device)
-      and driver_ver >= _MIN_DRIVER_FOR_CONDITIONAL_GRAPHS
-    )
-
-    if not self.use_cuda_graph:
-      print(f"[WARNING] Disabling CUDA Graphs. Current Driver {driver_ver} < 12.4.")
-      print("           mujoco_warp solver requires 12.4+ for graph loops.")
-
+    self.use_cuda_graph = self._should_use_cuda_graph()
     self.create_graph()
 
     self.nan_guard = NanGuard(cfg.nan_guard, self.num_envs, self._mj_model)
@@ -210,3 +199,28 @@ class Simulation:
           wp.capture_launch(self.step_graph)
         else:
           mjwarp.step(self.wp_model, self.wp_data)
+
+  # Private methods.
+
+  def _should_use_cuda_graph(self) -> bool:
+    """Determine if CUDA graphs can be used based on device and driver version."""
+    if not self.wp_device.is_cuda:
+      return False
+
+    driver_ver = wp.context.runtime.driver_version
+    has_mempool = wp.is_mempool_enabled(self.wp_device)
+
+    if driver_ver is None:
+      print("[WARNING] CUDA Graphs disabled: driver version unavailable")
+      return False
+
+    if has_mempool and driver_ver >= _GRAPH_CAPTURE_MIN_DRIVER:
+      return True
+
+    reasons = []
+    if not has_mempool:
+      reasons.append("mempool disabled")
+    if driver_ver < _GRAPH_CAPTURE_MIN_DRIVER:
+      reasons.append(f"driver {driver_ver[0]}.{driver_ver[1]} < 12.4")
+    print(f"[WARNING] CUDA Graphs disabled: {', '.join(reasons)}")
+    return False
